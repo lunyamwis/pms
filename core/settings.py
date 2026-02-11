@@ -44,7 +44,9 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
-    'drf_yasg',
+    "drf_spectacular",
+
+
     'channels',
     
     # Local apps
@@ -53,7 +55,9 @@ INSTALLED_APPS = [
     'agents',
     'messaging',
 ]
-
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
