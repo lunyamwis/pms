@@ -1,0 +1,566 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Properties - Real Estate{% endblock %}
+
+{% block extra_css %}
+<style>
+    .property-card {
+        border: none;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        overflow: hidden;
+    }
+
+    .property-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+    }
+
+    .property-image {
+        position: relative;
+        height: 250px;
+        overflow: hidden;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+    }
+
+    .property-image img {
+        width: 100%;
+        height: 250px;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+        display: block;
+    }
+
+    .property-card:hover .property-image img {
+        transform: scale(1.05);
+    }
+
+    .property-badge {
+        position: absolute;
+        top: 0.5rem;
+        left: 3rem;
+        z-index: 10;
+        max-width: calc(100% - 4rem);
+    }
+
+    .listing-badge {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        padding: 0.4rem 0.8rem;
+        border-radius: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        white-space: nowrap;
+        min-width: -webkit-fill-available;
+        display: inline-block;
+        max-width: calc(100% - 1.5rem);
+    }
+
+    .listing-badge-sale {
+        background-color: rgba(25, 135, 84, 0.9);
+        color: white;
+    }
+
+    .listing-badge-rent {
+        background-color: rgba(13, 110, 253, 0.9);
+        color: white;
+    }
+
+    .listing-badge-lease {
+        background-color: rgba(255, 193, 7, 0.9);
+        color: black;
+    }
+
+    .favorite-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        z-index: 2;
+        background: rgba(255, 255, 255, 0.9);
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .favorite-btn:hover {
+        background: #fff;
+        transform: scale(1.1);
+    }
+
+    .property-price {
+        color: #198754;
+        font-weight: 700;
+        font-size: 1.5rem;
+    }
+
+    .property-features {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .property-features span {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+
+    .search-filters {
+        background: #fff;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .view-toggle {
+        background: #fff;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        padding: 1rem;
+    }
+
+    .sort-dropdown .dropdown-toggle {
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 0.5rem;
+        color: #495057;
+    }
+
+    .agent-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .agent-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .pagination {
+        margin-top: 2rem;
+    }
+
+    .bg-light-custom {
+        background-color: #f8f9fa !important;
+    }
+
+    .property-img-cover {
+        width: 100%;
+        height: 250px;
+        object-fit: cover;
+    }
+
+    .property-debug-info {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        background: rgba(0,0,0,0.7);
+        color: white;
+        font-size: 10px;
+        padding: 2px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-light-custom py-5">
+    <div class="container">
+        <!-- Header Section -->
+        <div class="text-center mb-5">
+            <h1 class="display-5 fw-bold text-dark mb-3">Find Your Perfect Property</h1>
+            <p class="lead text-muted">Discover amazing properties that suit your lifestyle and budget</p>
+        </div>
+
+        <div class="row">
+            <!-- Sidebar Filters -->
+            <div class="col-lg-3 mb-4">
+                <div class="search-filters p-4">
+                    <h5 class="fw-bold mb-4">Search Filters</h5>
+                    <form method="get" action="{% url 'properties:search' %}">
+                        <!-- Property Type -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Property Type</label>
+                            {{ search_form.property_type }}
+                        </div>
+
+                        <!-- Listing Type -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Listing Type</label>
+                            {{ search_form.listing_type }}
+                        </div>
+
+                        <!-- Price Range -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Price Range</label>
+                            {{ search_form.price_range }}
+                        </div>
+
+                        <!-- Bedrooms -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Bedrooms</label>
+                            {{ search_form.bedrooms }}
+                        </div>
+
+                        <!-- Bathrooms -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Bathrooms</label>
+                            {{ search_form.bathrooms }}
+                        </div>
+
+                        <!-- Area Range -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Area (sqft)</label>
+                            <div class="row g-2">
+                                <div class="col">
+                                    {{ search_form.min_area }}
+                                </div>
+                                <div class="col">
+                                    {{ search_form.max_area }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Location -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Location</label>
+                            {{ search_form.location }}
+                        </div>
+
+                        <!-- Keywords -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Keywords</label>
+                            {{ search_form.keyword }}
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2">
+                            <i class="fas fa-search me-2"></i>Apply Filters
+                        </button>
+                    </form>
+                </div>
+
+                <!-- View Options -->
+                <div class="view-toggle mt-4">
+                    <h6 class="fw-bold mb-3">View Options</h6>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'properties:list' %}" class="btn btn-outline-primary flex-fill {% if not request.GET.view %}active{% endif %}">
+                            <i class="fas fa-th-large"></i> Grid
+                        </a>
+                        <a href="{% url 'properties:list' %}?view=list" class="btn btn-outline-primary flex-fill {% if request.GET.view == 'list' %}active{% endif %}">
+                            <i class="fas fa-list"></i> List
+                        </a>
+                        <a href="{% url 'properties:map' %}" class="btn btn-outline-primary flex-fill">
+                            <i class="fas fa-map-marker-alt"></i> Map
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-9">
+                <!-- Results Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="mb-1">
+                            {% if properties %}
+                                {{ page_obj.paginator.count }} Properties Found
+                            {% else %}
+                                No Properties Found
+                            {% endif %}
+                        </h4>
+                        <p class="text-muted mb-0">Showing results for your search</p>
+                    </div>
+                    
+                    <!-- Sort Dropdown -->
+                    <div class="sort-dropdown">
+                        <div class="dropdown">
+                            <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-sort me-2"></i>Sort: {{ request.GET.sort|default:"Latest" }}
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="?sort=latest">Latest Added</a></li>
+                                <li><a class="dropdown-item" href="?sort=price_low">Price: Low to High</a></li>
+                                <li><a class="dropdown-item" href="?sort=price_high">Price: High to Low</a></li>
+                                <li><a class="dropdown-item" href="?sort=beds">Most Bedrooms</a></li>
+                                <li><a class="dropdown-item" href="?sort=baths">Most Bathrooms</a></li>
+                                <li><a class="dropdown-item" href="?sort=area">Largest Area</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Properties Grid -->
+                {% if properties %}
+                    <div class="row g-4">
+                        {% for property in properties %}
+                        <div class="col-md-6 col-xl-4">
+                            <div class="property-card card h-100">
+                                <!-- Property Image -->
+                                <div class="property-image">
+                                    <!-- Force use main_image for testing -->
+                                    {% if property.main_image %}
+                                        <img src="{{ property.main_image.url }}" alt="{{ property.title }}" class="property-img property-img-cover" data-original-src="{{ property.main_image.url }}">
+                                    {% else %}
+                                        <img src="{% static 'img/defaults/property-placeholder.svg' %}" alt="No image available" class="property-img property-img-cover">
+                                    {% endif %}
+                                    
+                                    <!-- Debug info -->
+                                    <div class="property-debug-info">
+                                        {% if property.main_image %}
+                                            Main: {{ property.main_image.url }}
+                                        {% else %}
+                                            No main image
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Property Badge -->
+                                    <div class="property-badge">
+                                        <span class="badge listing-badge listing-badge-{{ property.listing_type }}">
+                                            {% if property.listing_type == 'sale' %}
+                                                <i class="fas fa-dollar-sign me-1"></i>FOR SALE
+                                            {% elif property.listing_type == 'rent' %}
+                                                <i class="fas fa-home me-1"></i>FOR RENT
+                                            {% elif property.listing_type == 'lease' %}
+                                                <i class="fas fa-handshake me-1"></i>FOR LEASE
+                                            {% else %}
+                                                {{ property.get_listing_type_display|upper }}
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    
+                                    <!-- Favorite Button -->
+                                    <button class="favorite-btn" data-property-id="{{ property.id }}" title="Add to favorites">
+                                        <i class="{% if property in user.favorite_properties.all %}fas text-danger{% else %}far text-muted{% endif %} fa-heart"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Property Details -->
+                                <div class="card-body p-4">
+                                    <div class="mb-3">
+                                        <h5 class="card-title mb-2">
+                                            {% if property.slug %}
+                                                <a href="{% url 'properties:detail' property.slug %}" class="text-decoration-none text-dark">
+                                                    {{ property.title }}
+                                                </a>
+                                            {% else %}
+                                                {{ property.title }}
+                                            {% endif %}
+                                        </h5>
+                                        <p class="text-muted mb-0">
+                                            <i class="fas fa-map-marker-alt me-1"></i>{{ property.address }}
+                                        </p>
+                                    </div>
+
+                                    <!-- Property Features -->
+                                    <div class="property-features mb-3">
+                                        <span><i class="fas fa-bed"></i>{{ property.bedrooms }}</span>
+                                        <span><i class="fas fa-bath"></i>{{ property.bathrooms }}</span>
+                                        <span><i class="fas fa-ruler-combined"></i>{{ property.area|intcomma }} sqft</span>
+                                    </div>
+
+                                    <!-- Price -->
+                                    <div class="property-price mb-3">
+                                        ${{ property.price|intcomma }}
+                                    </div>
+
+                                    <!-- Agent Info -->
+                                    <div class="agent-info">
+                                        {% if property.agent.profile_picture %}
+                                            <img src="{{ property.agent.profile_picture.url }}" alt="{{ property.agent.get_full_name }}" class="agent-avatar">
+                                        {% else %}
+                                            <div class="agent-avatar bg-light d-flex align-items-center justify-content-center">
+                                                <i class="fas fa-user text-muted"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div class="flex-grow-1">
+                                            <div class="fw-semibold">{{ property.agent.get_full_name }}</div>
+                                            <div class="text-muted small">Licensed Agent</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card Footer -->
+                                <div class="card-footer bg-transparent border-0 p-4 pt-0">
+                                    {% if property.slug %}
+                                        <a href="{% url 'properties:detail' property.slug %}" class="btn btn-primary w-100">
+                                            <i class="fas fa-eye me-2"></i>View Details
+                                        </a>
+                                    {% else %}
+                                        <button class="btn btn-secondary w-100" disabled>
+                                            Details Not Available
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if is_paginated %}
+                    <nav aria-label="Page navigation" class="d-flex justify-content-center">
+                        <ul class="pagination pagination-lg">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                                        <span>&laquo; Previous</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                                        <span>Next &raquo;</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+
+                {% else %}
+                    <!-- No Properties Found -->
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="fas fa-search fa-4x text-muted"></i>
+                        </div>
+                        <h3 class="text-muted mb-3">No Properties Found</h3>
+                        <p class="text-muted mb-4">Try adjusting your search criteria to find more properties.</p>
+                        <a href="{% url 'properties:list' %}" class="btn btn-primary">
+                            <i class="fas fa-refresh me-2"></i>Reset Filters
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Debug: Check if images are loading
+    const propertyImages = document.querySelectorAll('.property-img');
+    console.log('Found property images:', propertyImages.length);
+    
+    // Handle image loading errors  
+    propertyImages.forEach((img, index) => {
+        const originalSrc = img.dataset.originalSrc || img.src;
+        console.log(`Image ${index + 1} initial src:`, img.src);
+        console.log(`Image ${index + 1} original src:`, originalSrc);
+        
+        // Ensure the src is correct
+        if (img.src.includes('undefined') && originalSrc && !originalSrc.includes('undefined')) {
+            console.log(`Fixing undefined src for image ${index + 1}`);
+            img.src = originalSrc;
+        }
+        
+        img.addEventListener('load', function() {
+            console.log(`Image ${index + 1} loaded successfully from:`, this.src);
+        });
+        
+        img.addEventListener('error', function() {
+            console.log(`Image ${index + 1} failed to load from:`, this.src);
+            this.src = '/static/img/defaults/property-placeholder.svg';
+        });
+    });
+
+    // Favorite button functionality
+    const favoriteButtons = document.querySelectorAll('.favorite-btn');
+    
+    favoriteButtons.forEach(button => {
+        button.addEventListener('click', async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const propertyId = this.dataset.propertyId;
+            
+            // Validate property ID
+            if (!propertyId || propertyId === 'undefined' || propertyId === 'null') {
+                console.error('Invalid property ID:', propertyId);
+                return;
+            }
+            
+            if (!this.disabled) {
+                this.disabled = true;
+                
+                try {
+                    const response = await fetch(`/properties/${propertyId}/favorite/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        const icon = this.querySelector('i');
+                        
+                        if (data.is_favorited) {
+                            icon.className = 'fas fa-heart text-danger';
+                            this.title = 'Remove from favorites';
+                        } else {
+                            icon.className = 'far fa-heart text-muted';
+                            this.title = 'Add to favorites';
+                        }
+                    } else {
+                        console.error('Failed to toggle favorite');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                } finally {
+                    this.disabled = false;
+                }
+            }
+        });
+    });
+});
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Email Preferences - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Email Preferences</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Email Settings Info -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">About Email Notifications</h5>
+                    <p class="text-muted mb-0">You can customize what types of emails you receive from us. We'll always send you important account-related emails.</p>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <i class="fas fa-bell text-primary me-2"></i>
+                        <strong>Notifications</strong>
+                        <p class="text-muted mb-0">Updates about your account activity and property inquiries.</p>
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fas fa-newspaper text-primary me-2"></i>
+                        <strong>Newsletter</strong>
+                        <p class="text-muted mb-0">Weekly updates about new properties and real estate news.</p>
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fas fa-tag text-primary me-2"></i>
+                        <strong>Marketing</strong>
+                        <p class="text-muted mb-0">Special offers, promotions, and featured properties.</p>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

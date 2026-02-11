@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}My Profile - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Profile Information -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <img src="{{ user.get_profile_picture_url }}" alt="Profile Picture" class="rounded-circle img-fluid mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                    <h3>{{ user.get_full_name }}</h3>
+                    <p class="text-muted">{{ user.email }}</p>
+                    {% if user.is_agent %}
+                        <span class="badge bg-primary">Real Estate Agent</span>
+                    {% endif %}
+                    <div class="mt-3">
+                        <a href="{% url 'accounts:profile_edit' %}" class="btn btn-primary">Edit Profile</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Information -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">Contact Information</h5>
+                    {% if user.phone %}
+                        <p><i class="fas fa-phone me-2"></i> {{ user.phone }}</p>
+                    {% endif %}
+                    <p><i class="fas fa-envelope me-2"></i> {{ user.email }}</p>
+                    {% if user.address %}
+                        <p><i class="fas fa-map-marker-alt me-2"></i> {{ user.address }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Social Links -->
+            {% if user.website or user.facebook or user.twitter or user.linkedin %}
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Social Links</h5>
+                        {% if user.website %}
+                            <a href="{{ user.website }}" class="btn btn-outline-secondary btn-sm mb-2" target="_blank">
+                                <i class="fas fa-globe me-2"></i> Website
+                            </a>
+                        {% endif %}
+                        {% if user.facebook %}
+                            <a href="{{ user.facebook }}" class="btn btn-outline-primary btn-sm mb-2" target="_blank">
+                                <i class="fab fa-facebook me-2"></i> Facebook
+                            </a>
+                        {% endif %}
+                        {% if user.twitter %}
+                            <a href="{{ user.twitter }}" class="btn btn-outline-info btn-sm mb-2" target="_blank">
+                                <i class="fab fa-twitter me-2"></i> Twitter
+                            </a>
+                        {% endif %}
+                        {% if user.linkedin %}
+                            <a href="{{ user.linkedin }}" class="btn btn-outline-primary btn-sm mb-2" target="_blank">
+                                <i class="fab fa-linkedin me-2"></i> LinkedIn
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Activity Feed -->
+        <div class="col-md-8">
+            <!-- Favorite Properties -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Favorite Properties</h5>
+                    <a href="{% url 'accounts:favorites' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for property in favorite_properties %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <img src="{{ property.main_image.url }}" class="card-img-top" alt="{{ property.title }}" style="height: 200px; object-fit: cover;">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ property.title }}</h6>
+                                        <p class="card-text text-primary">${{ property.price|floatformat:0|intcomma }}</p>
+                                        <a href="{% url 'properties:detail' property.slug %}" class="btn btn-sm btn-outline-primary">View Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="col-12">
+                                <p class="text-muted">No favorite properties yet.</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Inquiries -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Inquiries</h5>
+                    <a href="{% url 'accounts:inquiries' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% for inquiry in recent_inquiries %}
+                        <div class="d-flex align-items-start mb-3">
+                            <img src="{{ inquiry.property.main_image.url }}" alt="{{ inquiry.property.title }}" class="me-3" style="width: 100px; height: 70px; object-fit: cover;">
+                            <div>
+                                <h6 class="mb-1">{{ inquiry.property.title }}</h6>
+                                <p class="text-muted mb-1"><small>{{ inquiry.created_at|date:"M d, Y" }}</small></p>
+                                <p class="mb-0">{{ inquiry.message|truncatechars:100 }}</p>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p class="text-muted">No inquiries yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Saved Searches -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Saved Searches</h5>
+                    <a href="{% url 'accounts:saved_searches' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% for search in saved_searches %}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="mb-1">{{ search.name }}</h6>
+                                <p class="text-muted mb-0">
+                                    <small>
+                                        {% if search.property_type %}{{ search.property_type }} • {% endif %}
+                                        {% if search.min_price %}${{ search.min_price|floatformat:0|intcomma }}{% endif %}
+                                        {% if search.max_price %} - ${{ search.max_price|floatformat:0|intcomma }}{% endif %}
+                                        {% if search.location %} • {{ search.location }}{% endif %}
+                                    </small>
+                                </p>
+                            </div>
+                            <div class="btn-group">
+                                <a href="{% url 'properties:search' %}?{{ search.query_params|urlencode }}" class="btn btn-sm btn-outline-primary">Run Search</a>
+                                <a href="{% url 'accounts:edit_search' search.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p class="text-muted">No saved searches yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

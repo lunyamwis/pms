@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Property Map - Real Estate{% endblock %}
+
+{% block content %}
+<div class="property-map-container">
+    <div class="row g-0">
+        <!-- Map -->
+        <div class="col-lg-8">
+            <div id="map" class="map-container"></div>
+        </div>
+
+        <!-- Property List -->
+        <div class="col-lg-4">
+            <div class="property-list bg-light property-list-container">
+                <div class="p-3">
+                    <h3>Properties</h3>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="search-input" placeholder="Search properties..." aria-label="Search properties">
+                        <button class="btn btn-outline-secondary" type="button" id="search-button" aria-label="Search">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
+                </div>
+
+                <div id="property-list" class="px-3">
+                    {% for property in properties %}
+                    <div class="property-item card mb-3" data-property-id="{{ property.id }}" role="button" tabindex="0" aria-label="View details for {{ property.title }}">
+                        <div class="row g-0">
+                            <div class="col-4">
+                                <img src="{{ property.main_image.url }}" class="img-fluid rounded-start property-thumbnail" alt="{{ property.title }}">
+                            </div>
+                            <div class="col-8">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ property.title }}</h5>
+                                    <p class="card-text text-muted small mb-1">{{ property.address }}</p>
+                                    <p class="card-text mb-1">
+                                        <strong class="text-primary">${{ property.price|intcomma }}</strong>
+                                    </p>
+                                    <div class="property-features small text-muted">
+                                        <span><i class="fas fa-bed"></i> {{ property.bedrooms }}</span>
+                                        <span class="mx-2"><i class="fas fa-bath"></i> {{ property.bathrooms }}</span>
+                                        <span><i class="fas fa-ruler-combined"></i> {{ property.area|intcomma }} sqft</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Property Info Modal -->
+<div class="modal fade" id="propertyModal" tabindex="-1" aria-labelledby="propertyModalLabel">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="propertyModalLabel">Property Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="property-details"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close modal">Close</button>
+                <a href="#" class="btn btn-primary" id="view-property-btn" aria-label="View full property details">View Property</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+<style>
+    .map-container {
+        height: calc(100vh - 76px);
+    }
+
+    .property-list-container {
+        height: calc(100vh - 76px);
+        overflow-y: auto;
+    }
+
+    .property-item {
+        cursor: pointer;
+        transition: transform 0.2s ease;
+    }
+
+    .property-item:hover {
+        transform: translateY(-2px);
+    }
+
+    .property-item.active {
+        border-color: var(--primary-color);
+        background-color: rgba(var(--primary-color-rgb), 0.05);
+    }
+
+    .property-thumbnail {
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .leaflet-popup-content {
+        margin: 0;
+        padding: 0;
+    }
+
+    .property-popup {
+        width: 250px;
+    }
+
+    .property-popup img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+    }
+
+    .property-popup-content {
+        padding: 10px;
+    }
+
+    .property-popup h5 {
+        margin: 0 0 5px;
+        font-size: 1rem;
+    }
+
+    .property-popup p {
+        margin: 0 0 5px;
+        font-size: 0.875rem;
+    }
+
+    .property-popup .btn {
+        width: 100%;
+        margin-top: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize map
+    const map = L.map('map').setView([0, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Initialize marker cluster group
+    const markers = L.markerClusterGroup();
+    const propertyMarkers = {};
+    
+    // Add properties to map
+    const properties = {{ properties_json|safe }};
+    properties.forEach(property => {
+        if (property.latitude && property.longitude) {
+            const marker = L.marker([property.latitude, property.longitude]);
+            
+            const popupContent = `
+                <div class="property-popup">
+                    <img src="${property.main_image}" alt="${property.title}">
+                    <div class="property-popup-content">
+                        <h5>${property.title}</h5>
+                        <p class="text-muted">${property.address}</p>
+                        <p class="text-primary fw-bold">$${property.price.toLocaleString()}</p>
+                        <button class="btn btn-primary btn-sm" onclick="showPropertyDetails(${property.id})">
+                            View Details
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            marker.bindPopup(popupContent);
+            markers.addLayer(marker);
+            propertyMarkers[property.id] = marker;
+        }
+    });
+    
+    map.addLayer(markers);
+    
+    // Fit map to markers
+    if (Object.keys(propertyMarkers).length > 0) {
+        map.fitBounds(markers.getBounds());
+    }
+
+    // Handle property item clicks
+    const propertyItems = document.querySelectorAll('.property-item');
+    propertyItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const propertyId = this.dataset.propertyId;
+            const marker = propertyMarkers[propertyId];
+            
+            // Remove active class from all items
+            propertyItems.forEach(item => item.classList.remove('active'));
+            // Add active class to clicked item
+            this.classList.add('active');
+            
+            if (marker) {
+                map.setView(marker.getLatLng(), 16);
+                marker.openPopup();
+            }
+        });
+    });
+
+    // Handle search
+    const searchInput = document.getElementById('search-input');
+    const searchButton = document.getElementById('search-button');
+    const propertyList = document.getElementById('property-list');
+
+    function performSearch() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const items = propertyList.getElementsByClassName('property-item');
+        
+        Array.from(items).forEach(item => {
+            const title = item.querySelector('.card-title').textContent.toLowerCase();
+            const address = item.querySelector('.text-muted').textContent.toLowerCase();
+            
+            if (title.includes(searchTerm) || address.includes(searchTerm)) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    searchButton.addEventListener('click', performSearch);
+    searchInput.addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') {
+            performSearch();
+        }
+    });
+});
+
+function showPropertyDetails(propertyId) {
+    // Fetch property details from API
+    fetch(`/api/properties/${propertyId}/`)
+        .then(response => response.json())
+        .then(property => {
+            const detailsHtml = `
+                <div class="property-details">
+                    <img src="${property.main_image}" class="img-fluid rounded mb-3" alt="${property.title}">
+                    <h5>${property.title}</h5>
+                    <p class="text-muted">${property.address}</p>
+                    <p class="text-primary fw-bold">$${property.price.toLocaleString()}</p>
+                    <div class="property-features mb-3">
+                        <span><i class="fas fa-bed"></i> ${property.bedrooms} Beds</span>
+                        <span class="mx-3"><i class="fas fa-bath"></i> ${property.bathrooms} Baths</span>
+                        <span><i class="fas fa-ruler-combined"></i> ${property.area.toLocaleString()} sqft</span>
+                    </div>
+                    <p>${property.description}</p>
+                </div>
+            `;
+            
+            document.getElementById('property-details').innerHTML = detailsHtml;
+            document.getElementById('view-property-btn').href = `/properties/${property.slug}/`;
+            
+            const modal = new bootstrap.Modal(document.getElementById('propertyModal'));
+            modal.show();
+        })
+        .catch(error => console.error('Error:', error));
+}
+</script>
+{% endblock %} 

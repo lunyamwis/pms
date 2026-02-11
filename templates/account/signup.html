@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Sign Up - Real Estate{% endblock %}
+
+{% block content %}
+<section class="auth-section py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card auth-card border-0 shadow">
+                    <div class="card-body p-5">
+                        <div class="text-center mb-4">
+                            <img src="{% static 'img/logo.svg' %}" alt="Logo" height="60" class="mb-4">
+                            <h1 class="h3 mb-2">Create Your Account</h1>
+                            <p class="text-muted">Join our community of property seekers and agents</p>
+                        </div>
+
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" title="Close alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <form method="post" action="{% url 'accounts:signup' %}">
+                            {% csrf_token %}
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" name="first_name" class="form-control {% if form.first_name.errors %}is-invalid{% endif %}" 
+                                               id="id_first_name" placeholder="First Name" required>
+                                        <label for="id_first_name">First Name</label>
+                                        {% if form.first_name.errors %}
+                                            <div class="invalid-feedback">{{ form.first_name.errors|join:", " }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" name="last_name" class="form-control {% if form.last_name.errors %}is-invalid{% endif %}" 
+                                               id="id_last_name" placeholder="Last Name" required>
+                                        <label for="id_last_name">Last Name</label>
+                                        {% if form.last_name.errors %}
+                                            <div class="invalid-feedback">{{ form.last_name.errors|join:", " }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-floating mb-3">
+                                <input type="email" name="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}" 
+                                       id="id_email" placeholder="Email" required>
+                                <label for="id_email">Email Address</label>
+                                {% if form.email.errors %}
+                                    <div class="invalid-feedback">{{ form.email.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-floating mb-3">
+                                <input type="tel" name="phone" class="form-control {% if form.phone.errors %}is-invalid{% endif %}" 
+                                       id="id_phone" placeholder="Phone">
+                                <label for="id_phone">Phone Number (Optional)</label>
+                                {% if form.phone.errors %}
+                                    <div class="invalid-feedback">{{ form.phone.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">I am a:</label>
+                                <div class="row g-2">
+                                    {% for value, label in form.role.field.choices %}
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                <input type="radio" name="role" value="{{ value }}" 
+                                                       class="form-check-input {% if form.role.errors %}is-invalid{% endif %}" 
+                                                       id="id_role_{{ value }}" required>
+                                                <label class="form-check-label" for="id_role_{{ value }}">{{ label }}</label>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                {% if form.role.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.role.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-floating mb-3">
+                                <input type="password" name="password1" class="form-control {% if form.password1.errors %}is-invalid{% endif %}" 
+                                       id="id_password1" placeholder="Password" required>
+                                <label for="id_password1">Password</label>
+                                {% if form.password1.errors %}
+                                    <div class="invalid-feedback">{{ form.password1.errors|join:", " }}</div>
+                                {% endif %}
+                                {% if form.password1.help_text %}
+                                    <div class="form-text">{{ form.password1.help_text|safe }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-floating mb-4">
+                                <input type="password" name="password2" class="form-control {% if form.password2.errors %}is-invalid{% endif %}" 
+                                       id="id_password2" placeholder="Confirm Password" required>
+                                <label for="id_password2">Confirm Password</label>
+                                {% if form.password2.errors %}
+                                    <div class="invalid-feedback">{{ form.password2.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input type="checkbox" name="newsletter" class="form-check-input" id="id_newsletter" checked>
+                                    <label class="form-check-label" for="id_newsletter">
+                                        Subscribe to our newsletter for property updates
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="form-check">
+                                    <input type="checkbox" name="terms" class="form-check-input {% if form.terms.errors %}is-invalid{% endif %}" 
+                                           id="id_terms" required>
+                                    <label class="form-check-label" for="id_terms">
+                                        I agree to the <a href="{% url 'terms' %}" target="_blank">Terms of Service</a> and 
+                                        <a href="{% url 'privacy' %}" target="_blank">Privacy Policy</a>
+                                    </label>
+                                    {% if form.terms.errors %}
+                                        <div class="invalid-feedback">{{ form.terms.errors|join:", " }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-user-plus me-2"></i>Create Account
+                                </button>
+                            </div>
+                        </form>
+
+                        <div class="text-center mt-4">
+                            <p class="mb-0">Already have an account? 
+                                <a href="{% url 'accounts:login' %}" class="text-primary">Sign in</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .auth-section {
+        min-height: calc(100vh - 200px);
+        padding: 4rem 0;
+        background-color: #f8f9fa;
+    }
+
+    .auth-card {
+        border-radius: 15px;
+    }
+
+    .form-control:focus {
+        border-color: var(--bs-primary);
+        box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+    }
+
+    .form-check-input:checked {
+        background-color: var(--bs-primary);
+        border-color: var(--bs-primary);
+    }
+</style>
+{% endblock %} 

@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Agent Dashboard - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>Welcome, {{ user.get_full_name }}</h2>
+            <p class="text-muted">Here's an overview of your real estate business.</p>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="text-white-50">Total Properties</h6>
+                            <h2 class="mb-0">{{ total_properties }}</h2>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-home fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="text-white-50">Active Listings</h6>
+                            <h2 class="mb-0">{{ active_properties }}</h2>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="text-white-50">Total Inquiries</h6>
+                            <h2 class="mb-0">{{ total_inquiries }}</h2>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-envelope fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="text-white-50">Average Rating</h6>
+                            <h2 class="mb-0">{{ average_rating|floatformat:1 }}</h2>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-star fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Inquiries -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Inquiries</h5>
+                    <a href="{% url 'agents:inquiries' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% for inquiry in recent_inquiries %}
+                        <div class="d-flex align-items-start mb-3">
+                            <img src="{{ inquiry.property.main_image.url }}" alt="{{ inquiry.property.title }}" class="me-3" style="width: 100px; height: 70px; object-fit: cover;">
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">{{ inquiry.property.title }}</h6>
+                                        <p class="text-muted mb-1"><small>From: {{ inquiry.user.get_full_name }}</small></p>
+                                    </div>
+                                    <small class="text-muted">{{ inquiry.created_at|naturaltime }}</small>
+                                </div>
+                                <p class="mb-0">{{ inquiry.message|truncatechars:100 }}</p>
+                            </div>
+                        </div>
+                        {% if not forloop.last %}
+                            <hr>
+                        {% endif %}
+                    {% empty %}
+                        <p class="text-muted mb-0">No recent inquiries.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Properties -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Properties</h5>
+                    <a href="{% url 'agents:properties' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% for property in recent_properties %}
+                        <div class="d-flex align-items-start mb-3">
+                            <img src="{{ property.main_image.url }}" alt="{{ property.title }}" class="me-3" style="width: 100px; height: 70px; object-fit: cover;">
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <h6 class="mb-1">{{ property.title }}</h6>
+                                    <span class="badge {% if property.status == 'available' %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {{ property.get_status_display }}
+                                    </span>
+                                </div>
+                                <p class="text-primary mb-1">${{ property.price|floatformat:0|intcomma }}</p>
+                                <p class="text-muted mb-0 small">
+                                    <i class="fas fa-map-marker-alt"></i> {{ property.city }}, {{ property.state }}
+                                </p>
+                            </div>
+                        </div>
+                        {% if not forloop.last %}
+                            <hr>
+                        {% endif %}
+                    {% empty %}
+                        <p class="text-muted mb-0">No recent properties.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <a href="{% url 'properties:create' %}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-plus-circle me-2"></i> Add Property
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'messaging:inbox' %}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-envelope me-2"></i> Check Messages
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'agents:analytics' %}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-chart-line me-2"></i> View Analytics
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'agents:profile_edit' %}" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-user-edit me-2"></i> Edit Profile
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

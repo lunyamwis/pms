@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Privacy Settings - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Privacy Settings</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Privacy Info -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">About Privacy Settings</h5>
+                    <p class="text-muted mb-0">Control what information is visible to other users on the platform.</p>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <i class="fas fa-phone text-primary me-2"></i>
+                        <strong>Phone Number</strong>
+                        <p class="text-muted mb-0">Show or hide your phone number on your public profile.</p>
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fas fa-envelope text-primary me-2"></i>
+                        <strong>Email Address</strong>
+                        <p class="text-muted mb-0">Control the visibility of your email address to other users.</p>
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                        <strong>Address</strong>
+                        <p class="text-muted mb-0">Choose whether to display your address on your profile.</p>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Data Protection -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">Data Protection</h5>
+                    <p class="text-muted">We take your privacy seriously. Your data is protected and will never be shared without your consent.</p>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <a href="{% url 'privacy' %}" class="btn btn-outline-primary">Privacy Policy</a>
+                        <a href="{% url 'terms' %}" class="btn btn-outline-secondary">Terms of Service</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

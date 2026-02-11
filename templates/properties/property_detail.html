@@ -1,0 +1,721 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ property.title }} - Real Estate{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    {% if user.is_authenticated and user == property.owner or user == property.agent %}
+    <!-- Management Controls -->
+    <div class="mb-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Property Management</h5>
+                    <div class="btn-group">
+                        <a href="{% url 'properties:update' property.slug %}" class="btn btn-primary">
+                            <i class="fas fa-edit me-2"></i>Edit Property
+                        </a>
+                        {% if user == property.owner %}
+                        <a href="{% url 'properties:delete' property.slug %}" class="btn btn-danger">
+                            <i class="fas fa-trash-alt me-2"></i>Delete Property
+                        </a>
+                        {% endif %}
+                        {% if property.status == 'available' %}
+                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#markSoldModal">
+                            <i class="fas fa-check-circle me-2"></i>Mark as Sold
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Property Header -->
+    <section class="property-header py-4">
+        <div class="container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'properties:home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'properties:list' %}">Properties</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ property.title }}</li>
+                </ol>
+            </nav>
+
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h1 class="mb-2">{{ property.title }}</h1>
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-map-marker-alt"></i> {{ property.address }}
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                    <h2 class="text-primary mb-0">${{ property.price|intcomma }}</h2>
+                    <span class="badge bg-primary">{{ property.get_listing_type_display }}</span>
+                    <span class="badge bg-secondary">{{ property.get_property_type_display }}</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Property Gallery -->
+    <section class="property-gallery py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8">
+                    <!-- Main Image -->
+                    <div class="main-image mb-4">
+                        {% if property.main_image %}
+                            <img src="{{ property.main_image.url }}" alt="{{ property.title }}" class="img-fluid rounded main-image">
+                        {% elif property.images.first %}
+                            <img src="{{ property.images.first.image.url }}" alt="{{ property.title }}" class="img-fluid rounded main-image">
+                        {% else %}
+                            <img src="{% static 'img/defaults/property-placeholder.svg' %}" alt="No image available" class="img-fluid rounded main-image">
+                        {% endif %}
+                    </div>
+
+                    <!-- Thumbnails -->
+                    <div class="thumbnails row g-2">
+                        {% for image in property_images %}
+                        <div class="col-3">
+                            <img src="{{ image.image.url }}" alt="{{ image.caption|default:property.title }}" 
+                                 class="img-fluid rounded thumbnail {% if image.is_primary %}active{% endif %}"
+                                 data-full="{{ image.image.url }}">
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <!-- Agent Info -->
+                    <div class="agent-info bg-white p-4 rounded shadow-sm">
+                        <div class="text-center mb-4">
+                            {% if property.agent.profile_picture %}
+                                <img src="{{ property.agent.profile_picture.url }}" alt="{{ property.agent.get_full_name }}" 
+                                     class="rounded-circle mb-3" width="100" height="100">
+                            {% else %}
+                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mb-3" style="width: 100px; height: 100px;">
+                                    <i class="fas fa-user fa-2x text-muted"></i>
+                                </div>
+                            {% endif %}
+                            <h4>{{ property.agent.get_full_name }}</h4>
+                            <p class="text-muted mb-2">{{ property.agent.company_name }}</p>
+                            <div class="agent-rating">
+                                <i class="fas fa-star text-warning"></i>
+                                <span>{{ property.agent.agent_profile.average_rating|floatformat:1 }} ({{ property.agent.agent_profile.reviews.count }} reviews)</span>
+                            </div>
+                        </div>
+
+                        <div class="contact-info mb-4">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-phone me-2"></i>
+                                <span>{{ property.agent.phone_number }}</span>
+                            </div>
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-envelope me-2"></i>
+                                <span>{{ property.agent.email }}</span>
+                            </div>
+                            {% if property.agent.website %}
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-globe me-2"></i>
+                                <a href="{{ property.agent.website }}" target="_blank">Visit Website</a>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Inquiry Form -->
+                        <form id="inquiry-form" action="{% url 'properties:inquiry' property.id %}" method="post" class="inquiry-form">
+                            {% csrf_token %}
+                            {{ inquiry_form.as_p }}
+                            <button type="submit" class="btn btn-primary w-100">Send Message</button>
+                        </form>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="property-actions bg-white p-4 rounded shadow-sm mt-4">
+                        <button class="btn btn-outline-primary w-100 mb-2 favorite-button" data-property-id="{{ property.id }}">
+                            <i class="{% if is_favorited %}fas{% else %}far{% endif %} fa-heart"></i>
+                            {% if is_favorited %}Remove from Favorites{% else %}Add to Favorites{% endif %}
+                        </button>
+                        <button class="btn btn-outline-secondary w-100 mb-2" data-bs-toggle="modal" data-bs-target="#shareModal">
+                            <i class="fas fa-share-alt"></i> Share Property
+                        </button>
+                        {% if property.virtual_tour_url %}
+                        <a href="{{ property.virtual_tour_url }}" class="btn btn-outline-info w-100 mb-2" target="_blank">
+                            <i class="fas fa-vr-cardboard"></i> Virtual Tour
+                        </a>
+                        {% endif %}
+                        {% if property.video_url %}
+                        <button class="btn btn-outline-danger w-100" data-bs-toggle="modal" data-bs-target="#videoModal">
+                            <i class="fas fa-play-circle"></i> Watch Video
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Property Details -->
+    <section class="property-details py-5 bg-light">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8">
+                    <!-- Description -->
+                    <div class="bg-white p-4 rounded shadow-sm mb-4">
+                        <h3>Description</h3>
+                        <div class="property-description">
+                            {{ property.description|safe }}
+                        </div>
+                    </div>
+
+                    <!-- Details -->
+                    <div class="bg-white p-4 rounded shadow-sm mb-4">
+                        <h3>Property Details</h3>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <ul class="list-unstyled">
+                                    <li class="mb-2">
+                                        <strong>Property ID:</strong> #{{ property.id }}
+                                    </li>
+                                    <li class="mb-2">
+                                        <strong>Property Type:</strong> {{ property.get_property_type_display }}
+                                    </li>
+                                    <li class="mb-2">
+                                        <strong>Property Status:</strong> {{ property.get_status_display }}
+                                    </li>
+                                    <li class="mb-2">
+                                        <strong>Price:</strong> ${{ property.price|intcomma }}
+                                    </li>
+                                    <li class="mb-2">
+                                        <strong>Area:</strong> {{ property.area|intcomma }} sqft
+                                    </li>
+                                    <li class="mb-2">
+                                        <strong>Bedrooms:</strong> {{ property.bedrooms }}
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <ul class="list-unstyled">
+                                    <li class="mb-2">
+                                        <strong>Bathrooms:</strong> {{ property.bathrooms }}
+                                    </li>
+                                    <li class="mb-2">
+                                        <strong>Garage:</strong> {{ property.garage }}
+                                    </li>
+                                    <li class="mb-2">
+                                        <strong>Year Built:</strong> {{ property.year_built }}
+                                    </li>
+                                    <li class="mb-2">
+                                        <strong>Property Views:</strong> {{ property.views_count }}
+                                    </li>
+                                    <li class="mb-2">
+                                        <strong>Last Updated:</strong> {{ property.updated_at|date:"F d, Y" }}
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Features & Amenities -->
+                    <div class="bg-white p-4 rounded shadow-sm mb-4">
+                        <h3>Features & Amenities</h3>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>Features</h5>
+                                <ul class="list-unstyled feature-list">
+                                    {% for feature in property.features.all %}
+                                    <li class="mb-2">
+                                        <i class="{{ feature.icon|default:'fas fa-check' }} text-primary me-2"></i>
+                                        {{ feature.name }}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>Amenities</h5>
+                                <ul class="list-unstyled amenity-list">
+                                    {% for amenity in property.amenities.all %}
+                                    <li class="mb-2">
+                                        <i class="{{ amenity.icon|default:'fas fa-check' }} text-primary me-2"></i>
+                                        {{ amenity.name }}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Location -->
+                    <div class="bg-white p-4 rounded shadow-sm mb-4">
+                        <h3>Location</h3>
+                        <div id="property-map" class="property-map mb-3" style="height: 400px;"></div>
+                        <div class="location-details">
+                            <p class="mb-2">
+                                <strong>Address:</strong> {{ property.address }}
+                            </p>
+                            <p class="mb-2">
+                                <strong>City:</strong> {{ property.city }}
+                            </p>
+                            <p class="mb-2">
+                                <strong>State:</strong> {{ property.state }}
+                            </p>
+                            <p class="mb-0">
+                                <strong>ZIP Code:</strong> {{ property.zip_code }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Reviews -->
+                    <div class="bg-white p-4 rounded shadow-sm mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h3 class="mb-0">Reviews</h3>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#reviewModal">
+                                Write a Review
+                            </button>
+                        </div>
+
+                        {% if reviews %}
+                            {% for review in reviews %}
+                            <div class="review-item mb-4">
+                                <div class="d-flex align-items-center mb-2">
+                                    <img src="{{ review.user.profile_picture.url }}" alt="{{ review.user.get_full_name }}" 
+                                         class="rounded-circle me-2" width="40" height="40">
+                                    <div>
+                                        <h5 class="mb-0">{{ review.user.get_full_name }}</h5>
+                                        <div class="text-warning">
+                                            {% for i in review.rating|rjust:5 %}
+                                                <i class="fas fa-star"></i>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <small class="text-muted ms-auto">{{ review.created_at|date:"F d, Y" }}</small>
+                                </div>
+                                <p class="mb-0">{{ review.comment }}</p>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted">No reviews yet. Be the first to review this property!</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Similar Properties -->
+                    <div class="bg-white p-4 rounded shadow-sm">
+                        <h3>Similar Properties</h3>
+                        <div class="row">
+                            {% for property in similar_properties %}
+                            <div class="col-md-6 mb-4">
+                                <div class="property-card card h-100">
+                                    <div class="position-relative">
+                                        {% if property.main_image %}
+                                            <img src="{{ property.main_image.url }}" class="card-img-top" alt="{{ property.title }}">
+                                        {% elif property.images.first %}
+                                            <img src="{{ property.images.first.image.url }}" class="card-img-top" alt="{{ property.title }}">
+                                        {% else %}
+                                            <img src="{% static 'img/defaults/property-placeholder.svg' %}" class="card-img-top" alt="No image available" style="height: 200px; object-fit: cover;">
+                                        {% endif %}
+                                        <span class="badge bg-primary position-absolute top-0 start-0 m-3">
+                                            {{ property.get_listing_type_display }}
+                                        </span>
+                                    </div>
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <a href="{% url 'properties:detail' property.slug %}" class="text-decoration-none text-dark">
+                                                {{ property.title }}
+                                            </a>
+                                        </h5>
+                                        <p class="text-muted mb-2">{{ property.address }}</p>
+                                        <div class="property-features d-flex justify-content-between mb-3">
+                                            <span><i class="fas fa-bed"></i> {{ property.bedrooms }} Beds</span>
+                                            <span><i class="fas fa-bath"></i> {{ property.bathrooms }} Baths</span>
+                                            <span><i class="fas fa-ruler-combined"></i> {{ property.area|intcomma }} sqft</span>
+                                        </div>
+                                        <h4 class="property-price text-primary">${{ property.price|intcomma }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <!-- Property Statistics -->
+                    <div class="bg-white p-4 rounded shadow-sm mb-4">
+                        <h4>Property Statistics</h4>
+                        <div class="row text-center">
+                            <div class="col-6 mb-3">
+                                <div class="stat-item">
+                                    <i class="fas fa-eye fa-2x text-primary mb-2"></i>
+                                    <h5 class="mb-0">{{ property.views_count }}</h5>
+                                    <small class="text-muted">Views</small>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="stat-item">
+                                    <i class="fas fa-heart fa-2x text-danger mb-2"></i>
+                                    <h5 class="mb-0">{{ property.favorited_by.count }}</h5>
+                                    <small class="text-muted">Favorites</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-item">
+                                    <i class="fas fa-star fa-2x text-warning mb-2"></i>
+                                    <h5 class="mb-0">{{ property.reviews.count }}</h5>
+                                    <small class="text-muted">Reviews</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-item">
+                                    <i class="fas fa-calendar-alt fa-2x text-info mb-2"></i>
+                                    <h5 class="mb-0">{{ property.created_at|date:"d" }}</h5>
+                                    <small class="text-muted">Days Listed</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mortgage Calculator -->
+                    <div class="bg-white p-4 rounded shadow-sm mb-4">
+                        <h4>Mortgage Calculator</h4>
+                        <form id="mortgage-calculator" class="mt-3">
+                            <div class="mb-3">
+                                <label for="home-price" class="form-label">Home Price</label>
+                                <input type="number" class="form-control" id="home-price" name="home-price" value="{{ property.price }}" aria-label="Home price">
+                            </div>
+                            <div class="mb-3">
+                                <label for="down-payment" class="form-label">Down Payment (%)</label>
+                                <input type="number" class="form-control" id="down-payment" name="down-payment" value="20" aria-label="Down payment percentage">
+                            </div>
+                            <div class="mb-3">
+                                <label for="loan-term" class="form-label">Loan Term (Years)</label>
+                                <select class="form-select" id="loan-term" name="loan-term" aria-label="Select loan term">
+                                    <option value="30">30 Years</option>
+                                    <option value="20">20 Years</option>
+                                    <option value="15">15 Years</option>
+                                    <option value="10">10 Years</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="interest-rate" class="form-label">Interest Rate (%)</label>
+                                <input type="number" class="form-control" id="interest-rate" name="interest-rate" value="3.5" step="0.1" aria-label="Interest rate percentage">
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100" aria-label="Calculate mortgage">Calculate</button>
+                        </form>
+                        <div id="mortgage-result" class="mt-3 d-none">
+                            <h5>Estimated Monthly Payment</h5>
+                            <div class="result-details">
+                                <p class="mb-2">Principal & Interest: <span id="monthly-payment">$0</span></p>
+                                <p class="mb-2">Property Tax: <span id="property-tax">$0</span></p>
+                                <p class="mb-2">Home Insurance: <span id="home-insurance">$0</span></p>
+                                <p class="mb-0 fw-bold">Total Monthly Payment: <span id="total-payment">$0</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Share Modal -->
+    <div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="shareModalLabel">Share Property</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="share-buttons d-flex justify-content-around">
+                        <a href="#" class="btn btn-outline-primary" onclick="shareOnFacebook()" aria-label="Share on Facebook">
+                            <i class="fab fa-facebook"></i> Facebook
+                        </a>
+                        <a href="#" class="btn btn-outline-info" onclick="shareOnTwitter()" aria-label="Share on Twitter">
+                            <i class="fab fa-twitter"></i> Twitter
+                        </a>
+                        <a href="#" class="btn btn-outline-success" onclick="shareOnWhatsApp()" aria-label="Share on WhatsApp">
+                            <i class="fab fa-whatsapp"></i> WhatsApp
+                        </a>
+                    </div>
+                    <div class="mt-4">
+                        <label for="property-link" class="form-label">Property Link</label>
+                        <div class="input-group">
+                            <input type="text" id="property-link" class="form-control" value="{{ request.build_absolute_uri }}" readonly aria-label="Property URL">
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyLink()" aria-label="Copy link to clipboard">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Modal -->
+    {% if property.video_url %}
+    <div class="modal fade" id="videoModal" tabindex="-1" aria-labelledby="videoModalLabel">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="videoModalLabel">Property Video</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="ratio ratio-16x9">
+                        <iframe src="{{ property.video_url }}" allowfullscreen title="Property video tour"></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Review Modal -->
+    <div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reviewModalLabel">Write a Review</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="{% url 'properties:review_create' property.slug %}" method="post">
+                        {% csrf_token %}
+                        {{ review_form.as_p }}
+                        <button type="submit" class="btn btn-primary" aria-label="Submit review">Submit Review</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% if user.is_authenticated and user == property.owner or user == property.agent %}
+<!-- Mark as Sold Modal -->
+<div class="modal fade" id="markSoldModal" tabindex="-1" aria-labelledby="markSoldModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="markSoldModalLabel">Mark Property as Sold</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to mark this property as sold? This will:</p>
+                <ul>
+                    <li>Remove the property from active listings</li>
+                    <li>Archive existing inquiries</li>
+                    <li>Update property status</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{% url 'properties:mark_sold' property.slug %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check-circle me-2"></i>Confirm
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<!-- Mapbox Styles -->
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+<style>
+    #property-map {width: 100%;}
+    .property-gallery .main-image {
+        height: 500px;
+        object-fit: cover;
+    }
+
+    .property-gallery .thumbnail {
+        height: 100px;
+        object-fit: cover;
+        cursor: pointer;
+        transition: opacity 0.3s ease;
+    }
+
+    .property-gallery .thumbnail:hover,
+    .property-gallery .thumbnail.active {
+        opacity: 0.7;
+    }
+
+    .feature-list li,
+    .amenity-list li {
+        display: flex;
+        align-items: center;
+    }
+
+    .stat-item {
+        padding: 1rem;
+        border-radius: var(--border-radius);
+        background-color: var(--light-gray);
+    }
+
+    .btn-group .btn {
+        margin-right: 0.5rem;
+    }
+    
+    .btn-group .btn:last-child {
+        margin-right: 0;
+    }
+    
+    .card {
+        border-radius: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Mapbox JS -->
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    /* Mapbox map */
+    const lat = parseFloat('{{ property.latitude|default_if_none:"" }}');
+    const lng = parseFloat('{{ property.longitude|default_if_none:"" }}');
+    if (!isNaN(lat) && !isNaN(lng)) {
+        mapboxgl.accessToken = '{{ MAPBOX_TOKEN }}';
+        const map = new mapboxgl.Map({
+            container: 'property-map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [lng, lat],
+            zoom: 15
+        });
+        new mapboxgl.Marker().setLngLat([lng, lat]).addTo(map);
+        map.on('load', () => {
+            map.resize();
+        });
+    } else {
+        // Attempt geocoding based on address if coordinates are missing
+        const addressQuery = encodeURIComponent('{{ property.address }}, {{ property.city }}, {{ property.state }}, {{ property.country }}');
+        if (addressQuery && addressQuery !== ', , , ') {
+            fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${addressQuery}.json?access_token={{ MAPBOX_TOKEN }}&limit=1`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.features && data.features.length) {
+                        const [geoLng, geoLat] = data.features[0].center;
+                        mapboxgl.accessToken = '{{ MAPBOX_TOKEN }}';
+                        const map = new mapboxgl.Map({
+                            container: 'property-map',
+                            style: 'mapbox://styles/mapbox/streets-v11',
+                            center: [geoLng, geoLat],
+                            zoom: 15
+                        });
+                        new mapboxgl.Marker().setLngLat([geoLng, geoLat]).addTo(map);
+                    } else {
+                        document.getElementById('property-map').innerHTML = '<p class="text-muted">Location not available.</p>';
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('property-map').innerHTML = '<p class="text-muted">Location not available.</p>';
+                });
+        } else {
+            document.getElementById('property-map').innerHTML = '<p class="text-muted">Location not available.</p>';
+        }
+    }
+
+    // Gallery functionality
+    const mainImage = document.querySelector('.main-image img');
+    const thumbnails = document.querySelectorAll('.thumbnail');
+    thumbnails.forEach(thumb => {
+        thumb.addEventListener('click', function() {
+            mainImage.src = this.dataset.full;
+            thumbnails.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+
+    // Favorite button functionality
+    const favoriteButton = document.querySelector('.favorite-button');
+    favoriteButton.addEventListener('click', async function(e) {
+        e.preventDefault();
+        if (!this.classList.contains('disabled')) {
+            const propertyId = this.dataset.propertyId;
+            this.classList.add('disabled');
+            
+            try {
+                const response = await fetch(`/api/properties/${propertyId}/favorite/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const icon = this.querySelector('i');
+                    icon.classList.toggle('fas', data.is_favorited);
+                    icon.classList.toggle('far', !data.is_favorited);
+                    this.textContent = data.is_favorited ? 'Remove from Favorites' : 'Add to Favorites';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+            
+            this.classList.remove('disabled');
+        }
+    });
+
+    // Mortgage calculator
+    const mortgageForm = document.getElementById('mortgage-calculator');
+    mortgageForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const price = parseFloat(document.getElementById('home-price').value);
+        const downPayment = parseFloat(document.getElementById('down-payment').value);
+        const term = parseInt(document.getElementById('loan-term').value);
+        const rate = parseFloat(document.getElementById('interest-rate').value);
+        
+        const loanAmount = price * (1 - downPayment / 100);
+        const monthlyRate = rate / 100 / 12;
+        const numPayments = term * 12;
+        
+        const monthlyPayment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
+                             (Math.pow(1 + monthlyRate, numPayments) - 1);
+        
+        const propertyTax = price * 0.012 / 12; // Estimated annual property tax rate of 1.2%
+        const homeInsurance = 1200 / 12; // Estimated annual home insurance of $1,200
+        
+        document.getElementById('monthly-payment').textContent = `$${monthlyPayment.toFixed(2)}`;
+        document.getElementById('property-tax').textContent = `$${propertyTax.toFixed(2)}`;
+        document.getElementById('home-insurance').textContent = `$${homeInsurance.toFixed(2)}`;
+        document.getElementById('total-payment').textContent = 
+            `$${(monthlyPayment + propertyTax + homeInsurance).toFixed(2)}`;
+        
+        document.getElementById('mortgage-result').classList.remove('d-none');
+    });
+});
+
+// Share functionality
+function shareOnFacebook() {
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, 
+                '_blank');
+}
+
+function shareOnTwitter() {
+    const text = `Check out this property: ${document.title}`;
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`,
+                '_blank');
+}
+
+function shareOnWhatsApp() {
+    const text = `Check out this property: ${window.location.href}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+function copyLink() {
+    const input = document.querySelector('.input-group input');
+    input.select();
+    document.execCommand('copy');
+    alert('Link copied to clipboard!');
+}
+</script>
+{% endblock %} 

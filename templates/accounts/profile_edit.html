@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Edit Profile - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Edit Profile</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Profile Picture -->
+                        <div class="mb-4 text-center">
+                            <img src="{{ user.get_profile_picture_url }}" alt="Current Profile Picture" class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                            <div class="mb-3">
+                                {{ form.profile_picture|as_crispy_field }}
+                            </div>
+                        </div>
+
+                        <!-- Personal Information -->
+                        <h5 class="mb-3">Personal Information</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.first_name|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.last_name|as_crispy_field }}
+                            </div>
+                        </div>
+                        {{ form.phone|as_crispy_field }}
+                        {{ form.bio|as_crispy_field }}
+                        
+
+                        <!-- Social Links -->
+                        <h5 class="mb-3 mt-4">Social Links</h5>
+                        {{ form.website|as_crispy_field }}
+                        {{ form.facebook|as_crispy_field }}
+                        {{ form.twitter|as_crispy_field }}
+                        {{ form.linkedin|as_crispy_field }}
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Additional Settings -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Email Preferences</h5>
+                            <p class="text-muted">Manage your email notifications and subscriptions.</p>
+                            <a href="{% url 'accounts:email_preferences' %}" class="btn btn-outline-primary">Email Settings</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Privacy Settings</h5>
+                            <p class="text-muted">Control what information is visible to others.</p>
+                            <a href="{% url 'accounts:privacy_settings' %}" class="btn btn-outline-primary">Privacy Settings</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Password Change -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-0">Password</h5>
+                            <p class="text-muted mb-0">Change your account password</p>
+                        </div>
+                        <a href="{% url 'accounts:password_change' %}" class="btn btn-outline-primary">Change Password</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

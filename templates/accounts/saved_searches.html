@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Saved Searches - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">Saved Searches</h2>
+                <a href="{% url 'properties:search' %}" class="btn btn-primary">
+                    <i class="fas fa-search"></i> New Search
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for search in saved_searches %}
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h5 class="card-title mb-1">{{ search.name }}</h5>
+                                <p class="text-muted mb-0">
+                                    <small>Saved {{ search.created_at|naturaltime }}</small>
+                                </p>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-link text-muted" type="button" data-bs-toggle="dropdown" title="More options">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'accounts:edit_search' search.id %}">
+                                            <i class="fas fa-edit me-2"></i> Edit
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item text-danger" href="{% url 'accounts:delete_search' search.id %}">
+                                            <i class="fas fa-trash me-2"></i> Delete
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="search-criteria mb-3">
+                            {% if search.property_type %}
+                                <span class="badge bg-secondary me-2">{{ search.property_type }}</span>
+                            {% endif %}
+                            {% if search.min_price or search.max_price %}
+                                <span class="badge bg-secondary me-2">
+                                    {% if search.min_price %}${{ search.min_price|floatformat:0|intcomma }}{% endif %}
+                                    {% if search.max_price %} - ${{ search.max_price|floatformat:0|intcomma }}{% endif %}
+                                </span>
+                            {% endif %}
+                            {% if search.min_bedrooms %}
+                                <span class="badge bg-secondary me-2">{{ search.min_bedrooms }}+ beds</span>
+                            {% endif %}
+                            {% if search.min_bathrooms %}
+                                <span class="badge bg-secondary me-2">{{ search.min_bathrooms }}+ baths</span>
+                            {% endif %}
+                            {% if search.location %}
+                                <span class="badge bg-secondary">{{ search.location }}</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="notification-settings small text-muted mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="notify_new_{{ search.id }}" 
+                                       {% if search.notify_new_listings %}checked{% endif %} disabled>
+                                <label class="form-check-label" for="notify_new_{{ search.id }}">
+                                    Notify about new listings
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="notify_price_{{ search.id }}"
+                                       {% if search.notify_price_changes %}checked{% endif %} disabled>
+                                <label class="form-check-label" for="notify_price_{{ search.id }}">
+                                    Notify about price changes
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="notify_status_{{ search.id }}"
+                                       {% if search.notify_status_changes %}checked{% endif %} disabled>
+                                <label class="form-check-label" for="notify_status_{{ search.id }}">
+                                    Notify about status changes
+                                </label>
+                            </div>
+                        </div>
+
+                        <a href="{% url 'properties:search' %}?{{ search.query_params|urlencode }}" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Run Search
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <p class="mb-0">You haven't saved any searches yet.</p>
+                </div>
+                <div class="text-center mt-4">
+                    <a href="{% url 'properties:search' %}" class="btn btn-primary">Start a New Search</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if is_paginated %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+{% endblock %} 

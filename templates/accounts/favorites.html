@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}My Favorites - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">My Favorite Properties</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for property in properties %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="property-card card h-100">
+                    <img src="{{ property.main_image.url }}" class="card-img-top" alt="{{ property.title }}">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ property.title }}</h5>
+                        <p class="card-text text-primary h5">${{ property.price|floatformat:0|intcomma }}</p>
+                        <p class="card-text text-muted">
+                            <i class="fas fa-map-marker-alt"></i> {{ property.city }}, {{ property.state }}
+                        </p>
+                        <div class="property-features text-muted small">
+                            <span><i class="fas fa-bed"></i> {{ property.bedrooms }} bd</span>
+                            <span><i class="fas fa-bath"></i> {{ property.bathrooms }} ba</span>
+                            <span><i class="fas fa-ruler-combined"></i> {{ property.area|floatformat:0|intcomma }} sqft</span>
+                        </div>
+                        <div class="mt-3">
+                            <a href="{% url 'properties:detail' property.slug %}" class="btn btn-outline-primary">View Details</a>
+                            <button class="btn btn-outline-danger favorite-button" data-property-id="{{ property.id }}">
+                                <i class="fas fa-heart"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-footer text-muted">
+                        <small>Added {{ property.favorited_by.through.objects.get(user=user, property=property).created_at|naturaltime }}</small>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <p class="mb-0">You haven't added any properties to your favorites yet.</p>
+                </div>
+                <div class="text-center mt-4">
+                    <a href="{% url 'properties:list' %}" class="btn btn-primary">Browse Properties</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if is_paginated %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const favoriteButtons = document.querySelectorAll('.favorite-button');
+    favoriteButtons.forEach(button => {
+        button.addEventListener('click', async function() {
+            const propertyId = this.dataset.propertyId;
+            try {
+                const response = await fetch(`/api/properties/${propertyId}/favorite/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+                if (response.ok) {
+                    // Remove the property card from the view
+                    this.closest('.col-md-6').remove();
+                    
+                    // Check if there are no more properties
+                    const remainingProperties = document.querySelectorAll('.property-card');
+                    if (remainingProperties.length === 0) {
+                        location.reload(); // Reload to show the empty state
+                    }
+                }
+            } catch (error) {
+                console.error('Error removing favorite:', error);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+{% endblock %} 

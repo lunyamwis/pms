@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ agent.get_full_name }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Agent Profile -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    {% if agent.profile_picture %}
+                        <img src="{{ agent.profile_picture.url }}" alt="{{ agent.get_full_name }}" class="rounded-circle img-fluid mb-3" style="width: 200px; height: 200px; object-fit: cover;">
+                    {% else %}
+                        <img src="{% static 'img/defaults/profile.png' %}" alt="Default Profile" class="rounded-circle img-fluid mb-3" style="width: 200px; height: 200px; object-fit: cover;">
+                    {% endif %}
+                    <h3>{{ agent.get_full_name }}</h3>
+                    <p class="text-muted">{{ agent.company_name }}</p>
+                    <div class="license-info mb-3">
+                        <span class="badge bg-primary">License #{{ agent.license_number }}</span>
+                    </div>
+                    <div class="agent-stats mb-4">
+                        <div class="row">
+                            <div class="col">
+                                <h4>{{ agent.properties_count }}</h4>
+                                <div class="text-muted">Properties</div>
+                            </div>
+                            <div class="col">
+                                <h4>{{ agent.average_rating|floatformat:1 }}</h4>
+                                <div class="text-muted">Rating</div>
+                            </div>
+                            <div class="col">
+                                <h4>{{ agent.experience_years }}</h4>
+                                <div class="text-muted">Years</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="contact-buttons">
+                        <a href="{% url 'messaging:compose' %}?recipient={{ agent.id }}" class="btn btn-primary mb-2 w-100">
+                            <i class="fas fa-envelope me-2"></i> Send Message
+                        </a>
+                        {% if agent.phone %}
+                            <a href="tel:{{ agent.phone }}" class="btn btn-outline-primary mb-2 w-100">
+                                <i class="fas fa-phone me-2"></i> Call Agent
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Information -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">Contact Information</h5>
+                    {% if agent.phone %}
+                        <p><i class="fas fa-phone me-2"></i> {{ agent.phone }}</p>
+                    {% endif %}
+                    <p><i class="fas fa-envelope me-2"></i> {{ agent.email }}</p>
+                    {% if agent.office_address %}
+                        <p><i class="fas fa-map-marker-alt me-2"></i> {{ agent.office_address }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Social Links -->
+            {% if agent.website or agent.facebook or agent.twitter or agent.linkedin %}
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Connect with {{ agent.first_name }}</h5>
+                        <div class="social-links">
+                            {% if agent.website %}
+                                <a href="{{ agent.website }}" class="btn btn-outline-secondary btn-sm mb-2 me-2" target="_blank">
+                                    <i class="fas fa-globe me-2"></i> Website
+                                </a>
+                            {% endif %}
+                            {% if agent.facebook %}
+                                <a href="{{ agent.facebook }}" class="btn btn-outline-primary btn-sm mb-2 me-2" target="_blank">
+                                    <i class="fab fa-facebook me-2"></i> Facebook
+                                </a>
+                            {% endif %}
+                            {% if agent.twitter %}
+                                <a href="{{ agent.twitter }}" class="btn btn-outline-info btn-sm mb-2 me-2" target="_blank">
+                                    <i class="fab fa-twitter me-2"></i> Twitter
+                                </a>
+                            {% endif %}
+                            {% if agent.linkedin %}
+                                <a href="{{ agent.linkedin }}" class="btn btn-outline-primary btn-sm mb-2" target="_blank">
+                                    <i class="fab fa-linkedin me-2"></i> LinkedIn
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Agent Content -->
+        <div class="col-md-8">
+            <!-- About -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h4 class="card-title">About {{ agent.first_name }}</h4>
+                    <p>{{ agent.bio|linebreaks }}</p>
+                    
+                    {% if agent.specializations %}
+                        <h5 class="mt-4">Specializations</h5>
+                        <div class="mb-3">
+                            {% for specialization in agent.specializations.split %}
+                                <span class="badge bg-secondary me-2">{{ specialization }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {% if agent.service_areas %}
+                        <h5>Service Areas</h5>
+                        <p>{{ agent.service_areas }}</p>
+                    {% endif %}
+
+                    {% if agent.languages %}
+                        <h5>Languages</h5>
+                        <p>{{ agent.languages }}</p>
+                    {% endif %}
+
+                    {% if agent.certifications %}
+                        <h5>Certifications</h5>
+                        <p>{{ agent.certifications|linebreaks }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Properties -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Listed Properties</h5>
+                    <a href="{% url 'properties:list' %}?agent={{ agent.id }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for property in properties %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <img src="{{ property.main_image.url }}" class="card-img-top" alt="{{ property.title }}" style="height: 200px; object-fit: cover;">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ property.title }}</h6>
+                                        <p class="card-text text-primary">${{ property.price|floatformat:0|intcomma }}</p>
+                                        <p class="card-text text-muted small">
+                                            <i class="fas fa-map-marker-alt"></i> {{ property.city }}, {{ property.state }}
+                                        </p>
+                                        <div class="property-features text-muted small mb-3">
+                                            <span><i class="fas fa-bed"></i> {{ property.bedrooms }} bd</span>
+                                            <span class="mx-2"><i class="fas fa-bath"></i> {{ property.bathrooms }} ba</span>
+                                            <span><i class="fas fa-ruler-combined"></i> {{ property.area|floatformat:0|intcomma }} sqft</span>
+                                        </div>
+                                        <a href="{% url 'properties:detail' property.slug %}" class="btn btn-sm btn-outline-primary">View Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="col-12">
+                                <p class="text-muted mb-0">No properties currently listed.</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reviews -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Client Reviews</h5>
+                </div>
+                <div class="card-body">
+                    {% for review in reviews %}
+                        <div class="review mb-4">
+                            <div class="d-flex align-items-center mb-2">
+                                {% if review.user.profile_picture %}
+                                    <img src="{{ review.user.profile_picture.url }}" alt="{{ review.user.get_full_name }}" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                {% else %}
+                                    <img src="{% static 'img/defaults/profile.png' %}" alt="Default Profile" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0">{{ review.user.get_full_name }}</h6>
+                                    <small class="text-muted">{{ review.created_at|naturaltime }}</small>
+                                </div>
+                                <div class="ms-auto">
+                                    {% for i in "12345"|make_list %}
+                                        {% if forloop.counter <= review.rating %}
+                                            <i class="fas fa-star text-warning"></i>
+                                        {% else %}
+                                            <i class="far fa-star text-warning"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <p class="mb-0">{{ review.comment }}</p>
+                        </div>
+                        {% if not forloop.last %}
+                            <hr>
+                        {% endif %}
+                    {% empty %}
+                        <p class="text-muted mb-0">No reviews yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
