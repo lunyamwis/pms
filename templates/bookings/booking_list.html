@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Bookings{% endblock %}
+{% block breadcrumb_active %}All Bookings{% endblock %}
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+    <div><h1 class="page-title">Bookings</h1><p class="page-subtitle">Manage all reservations</p></div>
+    <a href="{% url 'bookings:create' %}" class="btn btn-gold"><i class="fas fa-plus me-2"></i>New Booking</a>
+</div>
+<!-- Stats row -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3"><div class="card text-center p-3"><div style="font-size:28px;font-weight:700;">{{ stats.total }}</div><div class="text-muted" style="font-size:12px;">Total</div></div></div>
+    <div class="col-6 col-md-3"><div class="card text-center p-3 border-primary"><div style="font-size:28px;font-weight:700;color:var(--blue);">{{ stats.confirmed }}</div><div class="text-muted" style="font-size:12px;">Confirmed</div></div></div>
+    <div class="col-6 col-md-3"><div class="card text-center p-3 border-success"><div style="font-size:28px;font-weight:700;color:var(--emerald);">{{ stats.checked_in }}</div><div class="text-muted" style="font-size:12px;">Checked In</div></div></div>
+    <div class="col-6 col-md-3"><div class="card text-center p-3 border-warning"><div style="font-size:28px;font-weight:700;color:var(--gold);">{{ stats.checkout_today }}</div><div class="text-muted" style="font-size:12px;">Checkout Today</div></div></div>
+</div>
+<!-- Filters + Table -->
+<div class="card">
+    <div class="card-header">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-4"><input type="text" name="search" class="form-control" placeholder="Search guest, reference..." value="{{ request.GET.search }}"></div>
+            <div class="col-md-2">{{ form.source }}</div>
+            <div class="col-md-2"><input type="date" name="date_from" class="form-control" value="{{ request.GET.date_from }}"></div>
+            <div class="col-md-2"><input type="date" name="date_to" class="form-control" value="{{ request.GET.date_to }}"></div>
+            <div class="col-md-2"><button class="btn btn-primary w-100" type="submit"><i class="fas fa-search me-1"></i>Filter</button></div>
+        </form>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-luxe mb-0">
+                <thead><tr><th>Reference</th><th>Guest</th><th>Property</th><th>Check-in</th><th>Checkout</th><th>Nights</th><th>Amount</th><th>Source</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                {% for b in bookings %}
+                <tr>
+                    <td><a href="{{ b.get_absolute_url }}" class="fw-semibold text-gold no-underline">{{ b.booking_reference }}</a></td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="avatar" style="width:28px;height:28px;font-size:11px;">{{ b.guest.first_name|first }}{{ b.guest.last_name|first }}</div>
+                            {{ b.guest.full_name }}
+                        </div>
+                    </td>
+                    <td class="text-muted">{{ b.property.title|truncatechars:18 }}</td>
+                    <td>{{ b.check_in_date|date:"d M Y" }}</td>
+                    <td>{{ b.check_out_date|date:"d M Y" }}</td>
+                    <td class="text-center">{{ b.total_nights }}</td>
+                    <td class="fw-semibold">KSh {{ b.total_amount|intcomma }}</td>
+                    <td><span class="badge bg-light text-dark"><i class="fas {{ b.get_source_icon }} me-1"></i>{{ b.get_source_display }}</span></td>
+                    <td><span class="badge badge-{{ b.status }}">{{ b.get_status_display }}</span></td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="{{ b.get_absolute_url }}" class="btn btn-icon btn-light btn-sm" title="View"><i class="fas fa-eye"></i></a>
+                            {% if b.status == 'confirmed' %}<a href="{% url 'bookings:check_in' b.pk %}" class="btn btn-icon btn-success btn-sm" title="Check In"><i class="fas fa-arrow-down"></i></a>{% endif %}
+                            {% if b.status == 'checked_in' %}<a href="{% url 'bookings:check_out' b.pk %}" class="btn btn-icon btn-warning btn-sm" title="Checkout"><i class="fas fa-arrow-up"></i></a>{% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="10"><div class="empty-state"><i class="fas fa-calendar-xmark"></i><p>No bookings found</p><a href="{% url 'bookings:create' %}" class="btn btn-gold btn-sm">Create First Booking</a></div></td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if is_paginated %}
+    <div class="card-footer d-flex justify-content-between align-items-center">
+        <span class="text-muted" style="font-size:13px;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">‹</a></li>{% endif %}
+                <li class="page-item active"><a class="page-link" href="#">{{ page_obj.number }}</a></li>
+                {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">›</a></li>{% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

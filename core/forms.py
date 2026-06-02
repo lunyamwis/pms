@@ -3,7 +3,7 @@ from django import forms
 class ContactForm(forms.Form):
     INQUIRY_TYPES = (
         ('general', 'General Inquiry'),
-        ('property', 'Property Information'),
+        ('booking_property', 'Property Information'),
         ('agent', 'Agent Information'),
         ('appointment', 'Schedule Appointment'),
         ('feedback', 'Feedback'),
@@ -65,7 +65,7 @@ class ContactForm(forms.Form):
         property_id = cleaned_data.get('property_id')
         agent_id = cleaned_data.get('agent_id')
 
-        if inquiry_type == 'property' and not property_id:
+        if inquiry_type == 'booking_property' and not property_id:
             raise forms.ValidationError('Property ID is required for property inquiries.')
         elif inquiry_type == 'agent' and not agent_id:
             raise forms.ValidationError('Agent ID is required for agent inquiries.')

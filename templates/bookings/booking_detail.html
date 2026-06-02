@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}{{ booking.booking_reference }}{% endblock %}
+{% block breadcrumb_active %}{{ booking.booking_reference }}{% endblock %}
+{% block extra_head %}
+<style>
+.timeline { position: relative; padding: 0; list-style: none; }
+.timeline::before { content:''; position:absolute; left:15px; top:0; bottom:0; width:2px; background:var(--border); }
+.timeline-item { position:relative; padding:0 0 20px 45px; }
+.timeline-dot { position:absolute; left:6px; top:4px; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:8px; color:white; border:2px solid white; box-shadow:0 0 0 2px var(--border); }
+.timeline-dot.active { background:var(--gold); box-shadow:0 0 0 3px rgba(245,158,11,0.3); }
+.timeline-dot.done { background:var(--emerald); }
+.timeline-dot.future { background:var(--border); }
+.chat-msg { max-width:80%; }
+.chat-msg.out { margin-left:auto; }
+.chat-bubble { padding:10px 14px; border-radius:12px; font-size:13.5px; line-height:1.5; }
+.chat-msg.in .chat-bubble { background:var(--body-bg); border-radius:4px 12px 12px 12px; }
+.chat-msg.out .chat-bubble { background:linear-gradient(135deg, #0f172a, #1e3a5f); color:white; border-radius:12px 4px 12px 12px; }
+.chat-time { font-size:11px; color:var(--text-muted); margin-top:4px; }
+.detail-label { font-size:11px; text-transform:uppercase; letter-spacing:.8px; font-weight:600; color:var(--text-muted); margin-bottom:3px; }
+.detail-value { font-size:14px; font-weight:500; color:var(--text-main); }
+</style>
+{% endblock %}
+{% block content %}
+<!-- Header -->
+<div class="page-header">
+    <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
+        <a href="{% url 'bookings:list' %}" class="text-muted" style="text-decoration:none;font-size:13px;"><i class="fas fa-arrow-left me-1"></i>Bookings</a>
+        <h1 class="page-title mb-0">{{ booking.booking_reference }}</h1>
+        <span class="badge badge-{{ booking.status }} fs-6">{{ booking.get_status_display }}</span>
+        <span class="badge bg-light text-dark"><i class="fas {{ booking.get_source_icon }} me-1"></i>{{ booking.get_source_display }}</span>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        {% if booking.status == 'pending' %}<a href="{% url 'bookings:update' booking.pk %}" class="btn btn-primary btn-sm"><i class="fas fa-check me-1"></i>Confirm</a>{% endif %}
+        {% if booking.status == 'confirmed' %}<a href="{% url 'bookings:check_in' booking.pk %}" class="btn btn-success btn-sm"><i class="fas fa-arrow-down me-1"></i>Check In</a>{% endif %}
+        {% if booking.status == 'checked_in' %}<a href="{% url 'bookings:check_out' booking.pk %}" class="btn btn-warning btn-sm"><i class="fas fa-arrow-up me-1"></i>Checkout</a>{% endif %}
+        {% if booking.status not in 'checked_out cancelled' %}
+        <form method="post" action="{% url 'bookings:record_payment' booking.pk %}" class="d-inline" id="paymentForm">{% csrf_token %}{% endif %}
+        <a href="#" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#payModal"><i class="fas fa-money-bill me-1"></i>Payment</a>
+        <form method="post" action="{% url 'bookings:generate_receipt' booking.pk %}" class="d-inline">{% csrf_token %}
+            <button type="submit" class="btn btn-light btn-sm"><i class="fas fa-receipt me-1"></i>Receipt</button>
+        </form>
+        {% if booking.status not in 'checked_out cancelled no_show' %}
+        <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#cancelModal"><i class="fas fa-xmark me-1"></i>Cancel</button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column -->
+    <div class="col-lg-4">
+        <!-- Guest Card -->
+        <div class="card mb-4">
+            <div class="card-header"><i class="fas fa-user text-gold me-2"></i>Guest</div>
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="avatar avatar-gold" style="width:48px;height:48px;font-size:18px;">{{ booking.guest.first_name|first }}{{ booking.guest.last_name|first }}</div>
+                    <div>
+                        <div class="fw-semibold fs-6">{{ booking.guest.full_name }}</div>
+                        <div class="text-muted" style="font-size:12px;">{{ booking.guest.nationality|default:"" }}</div>
+                    </div>
+                </div>
+                <div class="mb-2"><div class="detail-label">Phone</div><div class="detail-value">{{ booking.guest.phone }}</div></div>
+                {% if booking.guest.email %}<div class="mb-2"><div class="detail-label">Email</div><div class="detail-value">{{ booking.guest.email }}</div></div>{% endif %}
+                {% if booking.guest.whatsapp_number %}<div class="mb-2"><div class="detail-label">WhatsApp</div><div class="detail-value"><a href="https://wa.me/{{ booking.guest.whatsapp_number }}" target="_blank" class="text-success"><i class="fab fa-whatsapp me-1"></i>{{ booking.guest.whatsapp_number }}</a></div></div>{% endif %}
+                <a href="{% url 'guests:detail' booking.guest.pk %}" class="btn btn-light btn-sm w-100 mt-2">View Full Profile</a>
+            </div>
+        </div>
+        <!-- Booking Summary Card -->
+        <div class="card mb-4">
+            <div class="card-header"><i class="fas fa-calendar text-gold me-2"></i>Stay Details</div>
+            <div class="card-body">
+                <div class="mb-2"><div class="detail-label">Property</div><div class="detail-value">{{ booking.property.title }}</div></div>
+                {% if booking.unit %}<div class="mb-2"><div class="detail-label">Unit</div><div class="detail-value">{{ booking.unit.name }}</div></div>{% endif %}
+                <div class="mb-2"><div class="detail-label">Check-in</div><div class="detail-value">{{ booking.check_in_date|date:"D, d M Y" }}</div></div>
+                <div class="mb-2"><div class="detail-label">Checkout</div><div class="detail-value">{{ booking.check_out_date|date:"D, d M Y" }}</div></div>
+                <div class="mb-2"><div class="detail-label">Nights</div><div class="detail-value fw-bold" style="font-size:22px;">{{ booking.total_nights }}</div></div>
+                <div class="mb-2"><div class="detail-label">Guests</div><div class="detail-value">{{ booking.num_adults }} adults{% if booking.num_children %}, {{ booking.num_children }} children{% endif %}</div></div>
+            </div>
+        </div>
+        <!-- Financials Card -->
+        <div class="card">
+            <div class="card-header"><i class="fas fa-coins text-gold me-2"></i>Financials</div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-1" style="font-size:13px;"><span class="text-muted">Room Rate × {{ booking.total_nights }}n</span><span>KSh {{ booking.subtotal|intcomma }}</span></div>
+                {% if booking.cleaning_fee %}<div class="d-flex justify-content-between mb-1" style="font-size:13px;"><span class="text-muted">Cleaning Fee</span><span>KSh {{ booking.cleaning_fee|intcomma }}</span></div>{% endif %}
+                {% if booking.tax_amount %}<div class="d-flex justify-content-between mb-1" style="font-size:13px;"><span class="text-muted">Tax</span><span>KSh {{ booking.tax_amount|intcomma }}</span></div>{% endif %}
+                {% if booking.discount_amount %}<div class="d-flex justify-content-between mb-1" style="font-size:13px;"><span class="text-muted">Discount</span><span class="text-success">-KSh {{ booking.discount_amount|intcomma }}</span></div>{% endif %}
+                <hr class="my-2">
+                <div class="d-flex justify-content-between fw-bold"><span>Total</span><span>KSh {{ booking.total_amount|intcomma }}</span></div>
+                {% if booking.balance_due > 0 %}<div class="alert alert-warning mt-2 mb-0 p-2" style="font-size:12px;"><i class="fas fa-exclamation-triangle me-1"></i>Balance Due: <strong>KSh {{ booking.balance_due|intcomma }}</strong></div>{% else %}<div class="alert alert-success mt-2 mb-0 p-2" style="font-size:12px;"><i class="fas fa-check-circle me-1"></i>Fully Paid</div>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column - Tabs -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header p-0">
+                <ul class="nav nav-tabs card-header-tabs px-3" style="border:none;">
+                    <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-messages"><i class="fab fa-whatsapp me-1"></i>Messages</a></li>
+                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-payments"><i class="fas fa-money-bill me-1"></i>Payments</a></li>
+                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-notes"><i class="fas fa-sticky-note me-1"></i>Notes</a></li>
+                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-timeline"><i class="fas fa-timeline me-1"></i>Timeline</a></li>
+                </ul>
+            </div>
+            <div class="card-body tab-content" style="min-height:400px;">
+                <!-- Messages Tab -->
+                <div class="tab-pane fade show active" id="tab-messages">
+                    <div style="height:320px;overflow-y:auto;" class="d-flex flex-column gap-3 p-2 mb-3">
+                        {% for msg in booking.messages.all %}
+                        <div class="chat-msg {{ msg.direction|yesno:'in,out' }}">
+                            <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">
+                                {% if msg.direction == 'outbound' %}<span class="badge bg-primary me-1" style="font-size:9px;">{{ msg.channel|upper }}</span>{% else %}<span class="badge bg-success me-1" style="font-size:9px;">FROM GUEST</span>{% endif %}
+                                {{ msg.sender_name }}
+                            </div>
+                            <div class="chat-bubble">{{ msg.content|linebreaksbr }}</div>
+                            <div class="chat-time">{{ msg.created_at|date:"d M H:i" }} · {{ msg.get_status_display }}</div>
+                        </div>
+                        {% empty %}
+                        <div class="empty-state"><i class="fab fa-whatsapp" style="color:#25d366;opacity:.4;"></i><p>No messages yet</p></div>
+                        {% endfor %}
+                    </div>
+                    <form method="post" action="{% url 'bookings:send_message' booking.pk %}">
+                        {% csrf_token %}
+                        <div class="input-group">
+                            <select name="channel" class="form-select" style="max-width:140px;">
+                                <option value="whatsapp">WhatsApp</option>
+                                <option value="email">Email</option>
+                                <option value="booking_com">Booking.com</option>
+                            </select>
+                            <input type="text" name="message" class="form-control" placeholder="Type a message...">
+                            <button class="btn btn-success"><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                    </form>
+                </div>
+                <!-- Payments Tab -->
+                <div class="tab-pane fade" id="tab-payments">
+                    {% for pay in booking.payments.all %}
+                    <div class="d-flex align-items-center justify-content-between p-2 border-bottom">
+                        <div><div class="fw-medium">KSh {{ pay.amount|intcomma }}</div><div class="text-muted" style="font-size:12px;">{{ pay.get_payment_method_display }} · {{ pay.paid_at|date:"d M Y" }}</div></div>
+                        <span class="badge {% if pay.status == 'completed' %}bg-success{% else %}bg-warning text-dark{% endif %}">{{ pay.get_status_display }}</span>
+                    </div>
+                    {% empty %}
+                    <div class="empty-state"><i class="fas fa-money-bill-slash"></i><p>No payments recorded</p></div>
+                    {% endfor %}
+                    <div class="mt-3">
+                        <button class="btn btn-gold btn-sm" data-bs-toggle="modal" data-bs-target="#payModal"><i class="fas fa-plus me-1"></i>Record Payment</button>
+                    </div>
+                </div>
+                <!-- Notes Tab -->
+                <div class="tab-pane fade" id="tab-notes">
+                    {% for note in booking.notes.all %}
+                    <div class="p-3 border-bottom">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="fw-medium" style="font-size:13px;">{{ note.author.get_full_name|default:note.author.email }}</span>
+                            <span class="text-muted" style="font-size:11px;">{{ note.created_at|date:"d M H:i" }}</span>
+                        </div>
+                        <p style="font-size:13.5px; margin:0;">{{ note.note }}</p>
+                    </div>
+                    {% empty %}
+                    <div class="empty-state"><i class="fas fa-note-sticky"></i><p>No notes yet</p></div>
+                    {% endfor %}
+                    <div class="mt-3">
+                        <form method="post" action="{% url 'bookings:add_note' booking.pk %}">
+                            {% csrf_token %}
+                            <textarea name="note" class="form-control mb-2" rows="3" placeholder="Add an internal note..."></textarea>
+                            <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-plus me-1"></i>Add Note</button>
+                        </form>
+                    </div>
+                </div>
+                <!-- Timeline -->
+                <div class="tab-pane fade" id="tab-timeline">
+                    <ul class="timeline pt-2">
+                        <li class="timeline-item"><div class="timeline-dot done"><i class="fas fa-check"></i></div><div class="fw-medium" style="font-size:13px;">Booking Created</div><div class="text-muted" style="font-size:12px;">{{ booking.created_at|date:"d M Y H:i" }}</div></li>
+                        <li class="timeline-item"><div class="timeline-dot {% if booking.status != 'pending' %}done{% else %}active{% endif %}"><i class="fas fa-check"></i></div><div class="fw-medium" style="font-size:13px;">Confirmed</div><div class="text-muted" style="font-size:12px;">{% if booking.status != 'pending' %}Done{% else %}Pending{% endif %}</div></li>
+                        <li class="timeline-item"><div class="timeline-dot {% if booking.status in 'checked_in checked_out' %}done{% elif booking.status == 'confirmed' %}active{% else %}future{% endif %}"><i class="fas fa-arrow-down"></i></div><div class="fw-medium" style="font-size:13px;">Check-in – {{ booking.check_in_date|date:"d M Y" }}</div></li>
+                        <li class="timeline-item"><div class="timeline-dot {% if booking.status == 'checked_out' %}done{% elif booking.status == 'checked_in' %}active{% else %}future{% endif %}"><i class="fas fa-arrow-up"></i></div><div class="fw-medium" style="font-size:13px;">Checkout – {{ booking.check_out_date|date:"d M Y" }}</div></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="payModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content" style="border-radius:14px;">
+        <div class="modal-header border-0"><h5 class="modal-title"><i class="fas fa-money-bill text-gold me-2"></i>Record Payment</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <form method="post" action="{% url 'bookings:record_payment' booking.pk %}">
+            {% csrf_token %}
+            <div class="modal-body">
+                {{ payment_form.as_p }}
+            </div>
+            <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-gold">Record Payment</button></div>
+        </form>
+    </div></div>
+</div>
+
+<!-- Cancel Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content" style="border-radius:14px;">
+        <div class="modal-header border-0"><h5 class="modal-title text-danger"><i class="fas fa-xmark me-2"></i>Cancel Booking</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <form method="post" action="{% url 'bookings:cancel' booking.pk %}">
+            {% csrf_token %}
+            <div class="modal-body"><textarea name="reason" class="form-control" rows="3" placeholder="Reason for cancellation..."></textarea></div>
+            <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Keep Booking</button><button type="submit" class="btn btn-danger">Cancel Booking</button></div>
+        </form>
+    </div></div>
+</div>
+{% endblock %}

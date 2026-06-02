@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
                 ('participants', models.ManyToManyField(related_name='conversations', to=settings.AUTH_USER_MODEL)),
-                ('property', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='conversations', to='properties.property')),
+                ('booking_property', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='conversations', to='properties.property')),
             ],
             options={
                 'ordering': ['-updated_at'],
@@ -50,7 +50,7 @@ class Migration(migrations.Migration):
             name='Notification',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('type', models.CharField(choices=[('message', 'New Message'), ('inquiry', 'Property Inquiry'), ('review', 'New Review'), ('property', 'Property Update'), ('system', 'System Notification')], max_length=20)),
+                ('type', models.CharField(choices=[('message', 'New Message'), ('inquiry', 'Property Inquiry'), ('review', 'New Review'), ('booking_property', 'Property Update'), ('system', 'System Notification')], max_length=20)),
                 ('title', models.CharField(max_length=200)),
                 ('message', models.TextField()),
                 ('related_link', models.CharField(blank=True, max_length=200)),
@@ -74,7 +74,7 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
                 ('is_read', models.BooleanField(default=False)),
-                ('property', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='inquiries', to='properties.property')),
+                ('booking_property', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='inquiries', to='properties.property')),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='property_inquiries', to=settings.AUTH_USER_MODEL)),
             ],
             options={

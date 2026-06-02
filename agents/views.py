@@ -58,7 +58,7 @@ class AgentDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         ).count()
         context['recent_inquiries'] = PropertyInquiry.objects.filter(
             property__in=all_properties
-        ).select_related('user', 'property').order_by('-created_at')[:5]
+        ).select_related('user', 'booking_property').order_by('-created_at')[:5]
         return context
 
 class AgentPropertiesView(LoginRequiredMixin, UserPassesTestMixin, ListView):
@@ -89,7 +89,7 @@ class AgentInquiriesView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         # Get inquiries for both owned and managed properties
         return PropertyInquiry.objects.filter(
             Q(property__owner=user) | Q(property__agent=user)
-        ).select_related('user', 'property').order_by('-created_at')
+        ).select_related('user', 'booking_property').order_by('-created_at')
 
 class AgentReviewsView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     template_name = 'agents/dashboard/reviews.html'

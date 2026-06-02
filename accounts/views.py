@@ -126,7 +126,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         
         if not request.user.is_authenticated:
             logger.warning("User not authenticated, redirecting to login")
-            return redirect('account_login')
+            return redirect('accounts:login')
             
         return super().dispatch(request, *args, **kwargs)
 
@@ -148,49 +148,79 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         logger.info(f"Dashboard user: {user}")
 
         try:
-            # Common data for all users
-            context['recent_inquiries'] = user.property_inquiries.select_related('property').order_by('-created_at')[:5]
+            from django.utils import timezone
+            from django.db.models import Sum
+            today = timezone.now().date()
+
+            # PMS Stats from new apps
+            try:
+                from bookings.models import Booking
+                bookings_qs = Booking.objects.filter(managed_by=user)
+                total_bookings = bookings_qs.count()
+                active_bookings = bookings_qs.filter(status='checked_in').count()
+                context['recent_bookings'] = bookings_qs.select_related(
+                    'guest', 'booking_property'
+                ).order_by('-created_at')[:8]
+                context['todays_checkins'] = bookings_qs.filter(
+                    check_in_date=today, status='confirmed'
+                ).select_related('guest', 'booking_property')
+                context['todays_checkouts'] = bookings_qs.filter(
+                    check_out_date=today, status='checked_in'
+                ).select_related('guest', 'booking_property')
+            except Exception:
+                total_bookings = 0
+                active_bookings = 0
+                context['recent_bookings'] = []
+                context['todays_checkins'] = []
+                context['todays_checkouts'] = []
+
+            try:
+                from financials.models import CashbookEntry
+                month_start = today.replace(day=1)
+                month_income = CashbookEntry.objects.filter(
+                    entry_type='receipt', date__gte=month_start
+                ).aggregate(t=Sum('amount'))['t'] or 0
+            except Exception:
+                month_income = 0
+
+            try:
+                from housekeeping.models import MaintenanceRequest
+                context['open_maintenance'] = MaintenanceRequest.objects.filter(
+                    status__in=['open', 'assigned']
+                ).select_related('booking_property').order_by('-priority')[:5]
+            except Exception:
+                context['open_maintenance'] = []
+
+            # Properties for this user
+            owned_properties = Property.objects.filter(owner=user)
+            total_props = owned_properties.count()
+
+            context['stats'] = {
+                'occupancy': round((active_bookings / max(total_props, 1)) * 100) if total_props else 0,
+                'checkins_today': len(context['todays_checkins']),
+                'checkouts_today': len(context['todays_checkouts']),
+                'month_revenue': month_income,
+                'total_bookings': total_bookings,
+                'active_bookings': active_bookings,
+            }
+
+            context['secondary_stats'] = [
+                {'label': 'Active Bookings', 'value': active_bookings, 'icon': 'fa-door-open', 'color': 'navy'},
+                {'label': 'My Properties', 'value': total_props, 'icon': 'fa-building', 'color': 'gold'},
+                {'label': 'Total Bookings', 'value': total_bookings, 'icon': 'fa-calendar-check', 'color': 'emerald'},
+                {'label': 'Pending', 'value': Booking.objects.filter(managed_by=user, status='pending').count() if total_bookings else 0, 'icon': 'fa-clock', 'color': 'purple'},
+            ] if True else []
+
+            # Legacy data still needed by old templates
+            context['recent_inquiries'] = user.property_inquiries.select_related('booking_property').order_by('-created_at')[:5]
             context['favorite_properties'] = user.favorite_properties.all()[:4]
             context['saved_searches'] = user.saved_searches.all()[:3]
 
-            # Agent-specific data
-            if user.role == 'agent':
-                # Properties owned by the agent
-                owned_properties = Property.objects.filter(owner=user)
-                # Properties managed by the agent but owned by others
-                managed_properties = Property.objects.filter(agent=user).exclude(owner=user)
-                # Combine both querysets
-                all_agent_properties = owned_properties | managed_properties
-                
-                context['total_listings'] = all_agent_properties.count()
-                context['active_listings'] = all_agent_properties.filter(status='available').count()
-                context['total_inquiries'] = PropertyInquiry.objects.filter(
-                    property__in=all_agent_properties
-                ).count()
-                context['recent_listings'] = all_agent_properties.order_by('-created_at')[:5]
-            
-            # Seller-specific data
-            elif user.role == 'seller':
-                context['total_listings'] = Property.objects.filter(owner=user).count()
-                context['active_listings'] = Property.objects.filter(owner=user, status='available').count()
-                context['total_inquiries'] = PropertyInquiry.objects.filter(property__owner=user).count()
-                context['recent_listings'] = Property.objects.filter(owner=user).order_by('-created_at')[:5]
-                # Add agent-managed properties if any
-                context['agent_managed_properties'] = Property.objects.filter(
-                    owner=user,
-                    agent__isnull=False
-                ).select_related('agent')
-            
-            # Buyer-specific data
-            else:
-                context['recommended_properties'] = Property.objects.filter(
-                    status='available',
-                    property_type=user.saved_searches.values_list('property_type', flat=True).first()
-                )[:4]
         except Exception as e:
             logger.error(f"Error getting dashboard data: {str(e)}")
-            messages.error(self.request, "There was an error loading your dashboard data.")
-            context['error'] = True
+            context['stats'] = {}
+            context['recent_bookings'] = []
+            context['open_maintenance'] = []
 
         return context
 
@@ -207,7 +237,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
         user = self.request.user
         context['favorite_properties'] = user.favorite_properties.all()[:4]
         context['saved_searches'] = user.saved_searches.all()[:4]
-        context['recent_inquiries'] = user.property_inquiries.select_related('property').order_by('-created_at')[:4]
+        context['recent_inquiries'] = user.property_inquiries.select_related('booking_property').order_by('-created_at')[:4]
         return context
 
 class ProfileUpdateView(LoginRequiredMixin, UpdateView):
@@ -272,7 +302,7 @@ class UserInquiriesView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return PropertyInquiry.objects.filter(user=self.request.user).select_related('property')
+        return PropertyInquiry.objects.filter(user=self.request.user).select_related('booking_property')
 
 class UserReviewsView(LoginRequiredMixin, ListView):
     template_name = 'accounts/dashboard/reviews.html'
@@ -280,7 +310,7 @@ class UserReviewsView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return self.request.user.property_reviews.select_related('property')
+        return self.request.user.property_reviews.select_related('booking_property')
 
 class SaveSearchView(LoginRequiredMixin, CreateView):
     model = SavedSearch

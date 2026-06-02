@@ -58,7 +58,7 @@ class Property(models.Model):
 
     # Relationships
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='owned_properties', limit_choices_to={'role__in': ['agent', 'seller']})
-    agent = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='managed_properties', limit_choices_to={'role': 'agent'})
+    agent = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='agent_properties', limit_choices_to={'role': 'agent'})
     favorited_by = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='favorite_properties', blank=True)
 
     # Meta information
@@ -67,11 +67,30 @@ class Property(models.Model):
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
 
     views_count = models.PositiveIntegerField(default=0)
+
+    # Rental / STR fields
+    rental_type = models.CharField(max_length=10, choices=[('str', 'Short-Term Rental'), ('ltr', 'Long-Term Rental'), ('both', 'Both')], default='str')
+    is_managed = models.BooleanField(default=False)
+    managed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='managed_properties')
+    airbnb_listing_url = models.URLField(blank=True)
+    booking_com_url = models.URLField(blank=True)
+    check_in_time = models.TimeField(null=True, blank=True)
+    check_out_time = models.TimeField(null=True, blank=True)
+    minimum_nights = models.PositiveIntegerField(default=1)
+    maximum_nights = models.PositiveIntegerField(default=365)
+    cleaning_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    weekly_discount = models.PositiveIntegerField(default=0)
+    monthly_discount = models.PositiveIntegerField(default=0)
+    house_rules = models.TextField(blank=True)
+    wifi_name = models.CharField(max_length=100, blank=True)
+    wifi_password = models.CharField(max_length=100, blank=True)
+    access_instructions = models.TextField(blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = 'Property'
+        verbose_name = 'booking_property'
         verbose_name_plural = 'Properties'
         ordering = ['-created_at']
 
@@ -118,7 +137,7 @@ class PropertyAmenity(models.Model):
         return self.name
 
 class PropertyReview(models.Model):
-    property = models.ForeignKey(Property, related_name='reviews', on_delete=models.CASCADE)
+    booking_property = models.ForeignKey(Property, related_name='reviews', on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='property_reviews', on_delete=models.CASCADE)
     rating = models.PositiveIntegerField(choices=[(i, i) for i in range(1, 6)])
     comment = models.TextField()
@@ -126,8 +145,57 @@ class PropertyReview(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('property', 'user')
+        unique_together = ('booking_property', 'user')
         ordering = ['-created_at']
 
     def __str__(self):
         return f"Review by {self.user.get_full_name()} for {self.property.title}"
+
+class PropertyUnit(models.Model):
+    UNIT_TYPE_CHOICES = [
+        ('room', 'Room'), ('apartment', 'Apartment'), ('studio', 'Studio'),
+        ('suite', 'Suite'), ('villa', 'Villa'), ('cottage', 'Cottage'),
+    ]
+    STATUS_CHOICES = [
+        ('available', 'Available'), ('occupied', 'Occupied'),
+        ('maintenance', 'Maintenance'), ('reserved', 'Reserved'),
+    ]
+
+    booking_property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='units')
+    name = models.CharField(max_length=100)
+    unit_type = models.CharField(max_length=20, choices=UNIT_TYPE_CHOICES, default='room')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available')
+    base_rate = models.DecimalField(max_digits=10, decimal_places=2)
+    max_occupancy = models.PositiveIntegerField(default=2)
+    num_beds = models.PositiveIntegerField(default=1)
+    num_bathrooms = models.DecimalField(max_digits=3, decimal_places=1, default=1)
+    floor_number = models.IntegerField(null=True, blank=True)
+    size_sqft = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    has_kitchen = models.BooleanField(default=False)
+    has_private_bathroom = models.BooleanField(default=True)
+    amenities = models.TextField(blank=True)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+        unique_together = ['booking_property', 'name']
+
+    def __str__(self):
+        return f"{self.property.title} - {self.name}"
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('properties:unit_detail', kwargs={'pk': self.pk})
+
+    def is_available(self, check_in, check_out):
+        from bookings.models import Booking
+        overlapping = Booking.objects.filter(
+            unit=self,
+            status__in=['confirmed', 'checked_in'],
+            check_in_date__lt=check_out,
+            check_out_date__gt=check_in,
+        ).exists()
+        return not overlapping

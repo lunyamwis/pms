@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}New Booking{% endblock %}
+{% block content %}
+<div class="page-header"><h1 class="page-title">{% if form.instance.pk %}Edit Booking{% else %}New Booking{% endif %}</h1></div>
+<div class="card" style="max-width:860px;">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-md-6"><label class="form-label">Property *</label>{{ form.property }}</div>
+                <div class="col-md-6"><label class="form-label">Unit</label>{{ form.unit }}</div>
+                <div class="col-12"><label class="form-label">Guest *</label>{{ form.guest }}</div>
+                <div class="col-md-6"><label class="form-label">Check-in Date *</label>{{ form.check_in_date }}</div>
+                <div class="col-md-6"><label class="form-label">Check-out Date *</label>{{ form.check_out_date }}</div>
+                <div class="col-md-4"><label class="form-label">Adults</label>{{ form.num_adults }}</div>
+                <div class="col-md-4"><label class="form-label">Children</label>{{ form.num_children }}</div>
+                <div class="col-md-4"><label class="form-label">Source</label>{{ form.source }}</div>
+                <div class="col-md-4"><label class="form-label">Room Rate (KSh/night) *</label>{{ form.room_rate }}</div>
+                <div class="col-md-4"><label class="form-label">Cleaning Fee</label>{{ form.cleaning_fee }}</div>
+                <div class="col-md-4"><label class="form-label">Deposit</label>{{ form.deposit_amount }}</div>
+                <div class="col-12"><label class="form-label">Special Requests</label>{{ form.special_requests }}</div>
+                <div class="col-12"><label class="form-label">Internal Notes</label>{{ form.internal_notes }}</div>
+            </div>
+            {% if form.errors %}<div class="alert alert-danger mt-3">{% for e in form.non_field_errors %}{{ e }}{% endfor %}{% for f in form %}{% for e in f.errors %}<div>{{ f.label }}: {{ e }}</div>{% endfor %}{% endfor %}</div>{% endif %}
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-gold"><i class="fas fa-save me-2"></i>Save Booking</button>
+                <a href="{% url 'bookings:list' %}" class="btn btn-light">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

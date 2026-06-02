@@ -29,7 +29,12 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('agents/', include('agents.urls')),
     path('messaging/', include('messaging.urls')),
-    
+    path('bookings/', include('bookings.urls', namespace='bookings')),
+    path('guests/', include('guests.urls', namespace='guests')),
+    path('financials/', include('financials.urls', namespace='financials')),
+    path('housekeeping/', include('housekeeping.urls', namespace='housekeeping')),
+    path('integrations/', include('integrations.urls', namespace='integrations')),
+
     # Static pages
     path('about/', TemplateView.as_view(template_name='pages/about.html'), name='about'),
     path('contact/', ContactView.as_view(), name='contact'),

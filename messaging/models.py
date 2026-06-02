@@ -36,7 +36,7 @@ class Notification(models.Model):
         ('message', 'New Message'),
         ('inquiry', 'Property Inquiry'),
         ('review', 'New Review'),
-        ('property', 'Property Update'),
+        ('booking_property', 'Property Update'),
         ('system', 'System Notification')
     ]
     
@@ -72,7 +72,7 @@ class PropertyInquiry(models.Model):
         ('cancelled', 'Cancelled')
     ]
     
-    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='inquiries')
+    booking_property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='inquiries')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='property_inquiries')
     message = models.TextField()
     phone = models.CharField(max_length=20, blank=True)

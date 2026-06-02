@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Guests{% endblock %}
+{% block breadcrumb_active %}Guest Directory{% endblock %}
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+    <div><h1 class="page-title">Guest Directory</h1><p class="page-subtitle">{{ paginator.count }} guests registered</p></div>
+    <a href="{% url 'guests:create' %}" class="btn btn-gold"><i class="fas fa-user-plus me-2"></i>Add Guest</a>
+</div>
+<div class="card mb-4">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2">
+            <div class="col-md-6"><input type="text" name="search" class="form-control" placeholder="Search name, phone, email..." value="{{ request.GET.search }}"></div>
+            <div class="col-md-3">{{ search_form.filter }}</div>
+            <div class="col-md-3 d-flex gap-2"><button type="submit" class="btn btn-primary flex-fill">Search</button><a href="{% url 'guests:export' %}" class="btn btn-light"><i class="fas fa-download"></i></a></div>
+        </form>
+    </div>
+</div>
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-luxe mb-0">
+            <thead><tr><th>Guest</th><th>Contact</th><th>Nationality</th><th>Stays</th><th>Tags</th><th></th></tr></thead>
+            <tbody>
+            {% for g in guests %}
+            <tr>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="avatar {% if g.is_vip %}avatar-gold{% endif %}">{{ g.first_name|first }}{{ g.last_name|first }}</div>
+                        <div>
+                            <div class="fw-medium">{{ g.full_name }}</div>
+                            <div class="text-muted" style="font-size:11px;">{{ g.email }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>{{ g.phone }}</td>
+                <td>{{ g.nationality|default:"—" }}</td>
+                <td class="text-center fw-semibold">{{ g.total_bookings }}</td>
+                <td>
+                    {% if g.is_vip %}<span class="badge badge-gold"><i class="fas fa-star me-1"></i>VIP</span>{% endif %}
+                    {% if g.is_blacklisted %}<span class="badge bg-danger">Blacklisted</span>{% endif %}
+                    {% if g.is_repeat_guest %}<span class="badge bg-info text-white">Repeat</span>{% endif %}
+                </td>
+                <td>
+                    <div class="d-flex gap-1">
+                        <a href="{{ g.get_absolute_url }}" class="btn btn-icon btn-light btn-sm"><i class="fas fa-eye"></i></a>
+                        <a href="{% url 'guests:update' g.pk %}" class="btn btn-icon btn-light btn-sm"><i class="fas fa-pencil"></i></a>
+                        <a href="{% url 'bookings:create' %}?guest={{ g.pk }}" class="btn btn-icon btn-gold btn-sm"><i class="fas fa-calendar-plus"></i></a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6"><div class="empty-state"><i class="fas fa-users"></i><p>No guests yet</p><a href="{% url 'guests:create' %}" class="btn btn-gold btn-sm">Add First Guest</a></div></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

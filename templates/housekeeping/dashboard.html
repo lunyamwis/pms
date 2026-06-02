@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Housekeeping{% endblock %}
+{% block breadcrumb_active %}Housekeeping{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between"><div><h1 class="page-title">Housekeeping</h1></div><a href="{% url 'housekeeping:task_create' %}" class="btn btn-gold"><i class="fas fa-plus me-2"></i>Schedule Task</a></div>
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3"><div class="stat-card stat-card-navy"><i class="fas fa-tasks stat-icon"></i><div class="stat-label">Tasks Today</div><div class="stat-value">{{ stats.tasks_today }}</div></div></div>
+    <div class="col-6 col-md-3"><div class="stat-card stat-card-emerald"><i class="fas fa-check stat-icon"></i><div class="stat-label">Completed</div><div class="stat-value">{{ stats.tasks_completed }}</div></div></div>
+    <div class="col-6 col-md-3"><div class="stat-card stat-card-gold"><i class="fas fa-tools stat-icon"></i><div class="stat-label">Open Maintenance</div><div class="stat-value">{{ stats.open_maintenance }}</div></div></div>
+    <div class="col-6 col-md-3"><div class="stat-card stat-card-purple"><i class="fas fa-concierge-bell stat-icon"></i><div class="stat-label">Pending Orders</div><div class="stat-value">{{ stats.pending_orders }}</div></div></div>
+</div>
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header section-header"><span><i class="fas fa-broom text-gold me-2"></i>Today's Cleaning Tasks</span><a href="{% url 'housekeeping:task_create' %}" class="btn btn-sm btn-light">Add</a></div>
+            <div class="card-body p-0">
+                {% for t in todays_tasks %}
+                <div class="d-flex align-items-center gap-3 px-3 py-3 border-bottom">
+                    <div class="avatar {% if t.status == 'completed' %}avatar-emerald{% elif t.status == 'in_progress' %}avatar-gold{% endif %}"><i class="fas fa-broom" style="font-size:13px;"></i></div>
+                    <div class="flex-fill">
+                        <div class="fw-medium" style="font-size:13px;">{{ t.get_task_type_display }} — {{ t.property.title }}</div>
+                        <div class="text-muted" style="font-size:12px;">{% if t.assigned_to %}{{ t.assigned_to.name }}{% else %}Unassigned{% endif %}</div>
+                    </div>
+                    <form method="post" action="{% url 'housekeeping:task_update_status' t.pk %}">{% csrf_token %}
+                        <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                            {% for v,l in t.STATUS_CHOICES %}<option value="{{ v }}" {% if t.status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+                        </select>
+                    </form>
+                </div>
+                {% empty %}<div class="empty-state py-4"><i class="fas fa-broom"></i><p>No tasks today</p></div>{% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header section-header"><span><i class="fas fa-tools text-gold me-2"></i>Urgent Maintenance</span><a href="{% url 'housekeeping:maintenance_create' %}" class="btn btn-sm btn-light">Report</a></div>
+            <div class="card-body p-0">
+                {% for m in urgent_maintenance %}
+                <div class="d-flex align-items-center gap-3 px-3 py-3 border-bottom">
+                    <div class="avatar" style="background:linear-gradient(135deg,#ef4444,#dc2626);"><i class="fas fa-tools" style="font-size:13px;"></i></div>
+                    <div class="flex-fill"><div class="fw-medium" style="font-size:13px;">{{ m.title }}</div><div class="text-muted" style="font-size:12px;">{{ m.property.title }}</div></div>
+                    <span class="badge bg-danger">{{ m.get_priority_display }}</span>
+                </div>
+                {% empty %}<div class="empty-state py-4"><i class="fas fa-check-circle text-success"></i><p>No urgent issues</p></div>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -23,6 +23,7 @@ ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -31,7 +32,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',
     'django.contrib.humanize',
-    
+
     # Third party apps
     'allauth',
     'allauth.account',
@@ -48,13 +49,101 @@ INSTALLED_APPS = [
 
 
     'channels',
-    
+
     # Local apps
     'accounts',
     'properties',
     'agents',
     'messaging',
+    'bookings',
+    'guests',
+    'financials',
+    'housekeeping',
+    'integrations',
+    'django_celery_beat',
 ]
+
+JAZZMIN_SETTINGS = {
+    "site_title": "LuxePMS Admin",
+    "site_header": "LuxePMS",
+    "site_brand": "LuxePMS",
+    "site_logo": None,
+    "login_logo": None,
+    "site_icon": None,
+    "welcome_sign": "Welcome to LuxePMS Administration",
+    "copyright": "LuxePMS",
+    "search_model": ["auth.User", "properties.Property"],
+    "topmenu_links": [
+        {"name": "Dashboard", "url": "/accounts/dashboard/", "permissions": ["auth.view_user"]},
+        {"name": "Properties", "url": "/properties/", "new_window": False},
+    ],
+    "usermenu_links": [
+        {"name": "Profile", "url": "/accounts/profile/", "icon": "fas fa-user"},
+        {"name": "Support", "url": "https://github.com/", "new_window": True},
+    ],
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "hide_apps": [],
+    "hide_models": [],
+    "order_with_respect_to": ["auth", "accounts", "properties", "bookings", "guests", "financials", "housekeeping", "integrations"],
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
+        "accounts.user": "fas fa-user-tie",
+        "properties.property": "fas fa-building",
+        "bookings.booking": "fas fa-calendar-check",
+        "guests.guest": "fas fa-user-friends",
+        "financials.cashbookentry": "fas fa-book",
+        "financials.receipt": "fas fa-receipt",
+        "housekeeping.cleaningtask": "fas fa-broom",
+        "housekeeping.maintenancerequest": "fas fa-tools",
+        "integrations.messagetemplate": "fas fa-envelope",
+    },
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+    "related_modal_active": False,
+    "custom_css": None,
+    "custom_js": None,
+    "use_google_fonts_cdn": True,
+    "show_ui_builder": False,
+    "changeform_format": "horizontal_tabs",
+    "changeform_format_overrides": {"auth.user": "collapsible", "auth.group": "vertical_tabs"},
+    "language_chooser": False,
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": "navbar-dark",
+    "accent": "accent-primary",
+    "navbar": "navbar-dark",
+    "no_navbar_border": False,
+    "navbar_fixed": True,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-primary",
+    "sidebar_nav_small_text": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": True,
+    "sidebar_nav_compact_style": False,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": False,
+    "theme": "darkly",
+    "dark_mode_theme": "darkly",
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success",
+    },
+}
+
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
@@ -331,9 +420,53 @@ REST_FRAMEWORK = {
 }
 
 # Celery Configuration
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+
+# === OTA & Communication Integrations ===
+TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
+TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
+TWILIO_WHATSAPP_FROM = os.environ.get('TWILIO_WHATSAPP_FROM', 'whatsapp:+14155238886')
+
+BOOKING_COM_USERNAME = os.environ.get('BOOKING_COM_USERNAME', '')
+BOOKING_COM_PASSWORD = os.environ.get('BOOKING_COM_PASSWORD', '')
+
+AIRBNB_CLIENT_ID = os.environ.get('AIRBNB_CLIENT_ID', '')
+AIRBNB_CLIENT_SECRET = os.environ.get('AIRBNB_CLIENT_SECRET', '')
+
+# === PMS Settings ===
+PMS_COMPANY_NAME = os.environ.get('PMS_COMPANY_NAME', 'LuxePMS')
+PMS_CURRENCY = os.environ.get('PMS_CURRENCY', 'KES')
+PMS_CURRENCY_SYMBOL = os.environ.get('PMS_CURRENCY_SYMBOL', 'KSh')
+
+# === Celery Beat Schedule ===
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+CELERY_BEAT_SCHEDULE = {
+    'sync-booking-com-every-15min': {
+        'task': 'integrations.tasks.sync_all_booking_com',
+        'schedule': crontab(minute='*/15'),
+    },
+    'sync-airbnb-every-15min': {
+        'task': 'integrations.tasks.sync_all_airbnb',
+        'schedule': crontab(minute='*/15'),
+    },
+    'send-pre-arrival-messages': {
+        'task': 'integrations.tasks.send_pre_arrival_messages',
+        'schedule': crontab(hour=9, minute=0),
+    },
+    'send-review-requests': {
+        'task': 'integrations.tasks.send_pending_review_requests',
+        'schedule': crontab(hour='*/2', minute=0),
+    },
+    'send-checkout-reminders': {
+        'task': 'integrations.tasks.send_checkout_reminders',
+        'schedule': crontab(hour=8, minute=0),
+    },
+}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Cashbook{% endblock %}
+{% block breadcrumb_active %}Cashbook{% endblock %}
+{% block extra_head %}
+<style>
+.cashbook-table thead th { background: #0f172a; color: white; font-size: 11px; text-transform: uppercase; letter-spacing: .8px; padding: 12px 14px; }
+.cashbook-table tbody tr.receipt-row td.amount-col { color: #059669; font-weight: 600; }
+.cashbook-table tbody tr.payment-row td.amount-col { color: #dc2626; font-weight: 600; }
+.cashbook-table tbody td { padding: 10px 14px; font-size: 13px; vertical-align: middle; }
+.cashbook-table tbody tr:hover { background: #f8fafc; }
+.cashbook-table .balance-col { font-weight: 700; font-size: 13px; }
+.cashbook-table .balance-col.negative { color: #dc2626; }
+.cashbook-table .opening-row { background: #fef9ee; font-weight: 600; }
+.cashbook-table .total-row { background: #0f172a; color: white; font-weight: 700; }
+.cashbook-table .balance-row { background: #f59e0b; color: white; font-weight: 700; }
+.summary-pill { padding: 12px 20px; border-radius: 10px; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+    <div><h1 class="page-title">Cashbook</h1><p class="page-subtitle">Digital record of all income &amp; expenses</p></div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'financials:export_cashbook' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-light btn-sm"><i class="fas fa-download me-1"></i>Export CSV</a>
+        <button class="btn btn-gold btn-sm" data-bs-toggle="modal" data-bs-target="#addEntryModal"><i class="fas fa-plus me-1"></i>Add Entry</button>
+    </div>
+</div>
+
+<!-- Summary Pills -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="summary-pill bg-white border d-flex align-items-center gap-3">
+            <div class="avatar avatar-emerald"><i class="fas fa-arrow-down"></i></div>
+            <div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);">Total Receipts</div><div style="font-size:22px;font-weight:700;color:#059669;">KSh {{ total_receipts|intcomma }}</div></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="summary-pill bg-white border d-flex align-items-center gap-3">
+            <div class="avatar" style="background:linear-gradient(135deg,#ef4444,#dc2626);"><i class="fas fa-arrow-up"></i></div>
+            <div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);">Total Payments</div><div style="font-size:22px;font-weight:700;color:#dc2626;">KSh {{ total_payments|intcomma }}</div></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="summary-pill bg-white border d-flex align-items-center gap-3">
+            <div class="avatar {% if current_balance >= 0 %}avatar-gold{% else %}{% endif %}" style="{% if current_balance < 0 %}background:linear-gradient(135deg,#ef4444,#dc2626);{% endif %}"><i class="fas fa-wallet"></i></div>
+            <div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);">Current Balance</div><div style="font-size:22px;font-weight:700;color:{% if current_balance >= 0 %}var(--gold){% else %}#dc2626{% endif %};">KSh {{ current_balance|intcomma }}</div></div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter -->
+<div class="card mb-4">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3"><input type="date" name="date_from" class="form-control form-control-sm" value="{{ request.GET.date_from }}" placeholder="From"></div>
+            <div class="col-md-3"><input type="date" name="date_to" class="form-control form-control-sm" value="{{ request.GET.date_to }}" placeholder="To"></div>
+            <div class="col-md-3">{{ filter_form.category }}</div>
+            <div class="col-md-3 d-flex gap-2"><button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="fas fa-filter me-1"></i>Filter</button><a href="{% url 'financials:cashbook' %}" class="btn btn-light btn-sm">Clear</a></div>
+        </form>
+    </div>
+</div>
+
+<!-- Cashbook Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table cashbook-table mb-0">
+                <thead><tr><th>Date</th><th>Name</th><th>Description</th><th>Category</th><th class="text-end">Receipt (KSh)</th><th class="text-end">Payment (KSh)</th><th class="text-end">Balance (KSh)</th><th></th></tr></thead>
+                <tbody>
+                {% for e in entries %}
+                <tr class="{% if e.is_opening_balance %}opening-row{% elif e.entry_type == 'receipt' %}receipt-row{% else %}payment-row{% endif %}">
+                    <td style="white-space:nowrap;">{{ e.date|date:"d/m/Y" }}</td>
+                    <td class="fw-medium">{{ e.name }}</td>
+                    <td class="text-muted">{{ e.description }}</td>
+                    <td><span class="badge bg-light text-dark" style="font-size:10px;">{{ e.get_category_display }}</span></td>
+                    <td class="text-end amount-col">{% if e.entry_type == 'receipt' %}{{ e.amount|intcomma }}{% endif %}</td>
+                    <td class="text-end amount-col">{% if e.entry_type == 'payment' %}{{ e.amount|intcomma }}{% endif %}</td>
+                    <td class="text-end balance-col {% if e.balance < 0 %}negative{% endif %}">{{ e.balance|intcomma }}</td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="{% url 'financials:edit_entry' e.pk %}" class="btn btn-icon btn-light btn-sm"><i class="fas fa-pencil" style="font-size:10px;"></i></a>
+                            <a href="{% url 'financials:delete_entry' e.pk %}" class="btn btn-icon btn-light btn-sm text-danger"><i class="fas fa-trash" style="font-size:10px;"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="8"><div class="empty-state"><i class="fas fa-book-open"></i><p>No entries yet</p><button class="btn btn-gold btn-sm" data-bs-toggle="modal" data-bs-target="#addEntryModal">Add First Entry</button></div></td></tr>
+                {% endfor %}
+                <!-- Totals Row -->
+                {% if entries %}
+                <tr class="total-row"><td colspan="4" class="text-end">TOTAL</td><td class="text-end">{{ total_receipts|intcomma }}</td><td class="text-end">{{ total_payments|intcomma }}</td><td class="text-end"></td><td></td></tr>
+                <tr class="balance-row"><td colspan="6" class="text-end">BALANCE C/F</td><td class="text-end">{{ current_balance|intcomma }}</td><td></td></tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Entry Modal -->
+<div class="modal fade" id="addEntryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg"><div class="modal-content" style="border-radius:14px;">
+        <div class="modal-header border-0"><h5 class="modal-title"><i class="fas fa-plus-circle text-gold me-2"></i>Add Cashbook Entry</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <form method="post" action="{% url 'financials:add_entry' %}">
+            {% csrf_token %}
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">{{ entry_form.date.label_tag }}{{ entry_form.date }}</div>
+                    <div class="col-md-6">{{ entry_form.entry_type.label_tag }}{{ entry_form.entry_type }}</div>
+                    <div class="col-md-6">{{ entry_form.name.label_tag }}{{ entry_form.name }}</div>
+                    <div class="col-md-6">{{ entry_form.amount.label_tag }}{{ entry_form.amount }}</div>
+                    <div class="col-12">{{ entry_form.description.label_tag }}{{ entry_form.description }}</div>
+                    <div class="col-md-6">{{ entry_form.category.label_tag }}{{ entry_form.category }}</div>
+                    <div class="col-md-6">{{ entry_form.payment_method.label_tag }}{{ entry_form.payment_method }}</div>
+                </div>
+            </div>
+            <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-gold">Add Entry</button></div>
+        </form>
+    </div></div>
+</div>
+{% endblock %}
