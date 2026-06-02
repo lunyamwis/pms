@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Receipt {{ receipt.receipt_number }}{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div><h1 class="page-title">{{ receipt.receipt_number }}</h1></div>
+    <div class="d-flex gap-2">
+        <form method="post" action="{% url 'bookings:send_receipt' receipt.booking.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="channel" value="email"><button class="btn btn-light btn-sm"><i class="fas fa-envelope me-1"></i>Send Email</button></form>
+        <form method="post" action="{% url 'bookings:send_receipt' receipt.booking.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="channel" value="whatsapp"><button class="btn btn-sm" style="background:#25d366;color:white;border:none;"><i class="fab fa-whatsapp me-1"></i>WhatsApp</button></form>
+    </div>
+</div>
+<div class="card" style="max-width:700px;">
+    <div class="card-body p-4">
+        <div class="text-center mb-4">
+            <h2 style="font-family:'Playfair Display',serif; color:var(--navy);">RECEIPT</h2>
+            <div class="fw-semibold text-gold" style="font-size:18px;">{{ receipt.receipt_number }}</div>
+            <div class="text-muted" style="font-size:13px;">{{ receipt.issued_at|date:"d F Y" }}</div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-6"><div style="font-size:11px;text-transform:uppercase;color:var(--text-muted);letter-spacing:.8px;">Guest</div><div class="fw-semibold">{{ receipt.guest_name }}</div></div>
+            <div class="col-6"><div style="font-size:11px;text-transform:uppercase;color:var(--text-muted);letter-spacing:.8px;">Property</div><div class="fw-semibold">{{ receipt.property_name }}</div></div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-6"><div style="font-size:11px;text-transform:uppercase;color:var(--text-muted);">Check-in</div><div>{{ receipt.check_in_date|date:"D, d M Y" }}</div></div>
+            <div class="col-6"><div style="font-size:11px;text-transform:uppercase;color:var(--text-muted);">Check-out</div><div>{{ receipt.check_out_date|date:"D, d M Y" }}</div></div>
+        </div>
+        <hr>
+        <div class="d-flex justify-content-between mb-2"><span class="text-muted">Room Rate × {{ receipt.total_nights }} nights</span><span>KSh {{ receipt.subtotal|intcomma }}</span></div>
+        {% if receipt.cleaning_fee %}<div class="d-flex justify-content-between mb-2"><span class="text-muted">Cleaning Fee</span><span>KSh {{ receipt.cleaning_fee|intcomma }}</span></div>{% endif %}
+        {% if receipt.tax_amount %}<div class="d-flex justify-content-between mb-2"><span class="text-muted">Tax</span><span>KSh {{ receipt.tax_amount|intcomma }}</span></div>{% endif %}
+        {% if receipt.discount_amount %}<div class="d-flex justify-content-between mb-2"><span class="text-muted">Discount</span><span class="text-success">-KSh {{ receipt.discount_amount|intcomma }}</span></div>{% endif %}
+        <hr>
+        <div class="d-flex justify-content-between fw-bold fs-5"><span>TOTAL</span><span style="color:var(--gold);">KSh {{ receipt.total_amount|intcomma }}</span></div>
+        <div class="mt-3 text-muted" style="font-size:12px;"><i class="fas fa-info-circle me-1"></i>Payment Method: {{ receipt.payment_method }}</div>
+    </div>
+</div>
+{% endblock %}

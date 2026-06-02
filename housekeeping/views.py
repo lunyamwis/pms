@@ -16,8 +16,8 @@ class HousekeepingDashboardView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         today = timezone.now().date()
-        ctx['todays_tasks'] = CleaningTask.objects.filter(scheduled_date=today).select_related('booking_property', 'assigned_to')
-        ctx['urgent_maintenance'] = MaintenanceRequest.objects.filter(priority='urgent', status__in=['open', 'assigned']).select_related('booking_property')
+        ctx['todays_tasks'] = CleaningTask.objects.filter(scheduled_date=today).select_related('asset_property' , 'assigned_to')
+        ctx['urgent_maintenance'] = MaintenanceRequest.objects.filter(priority='urgent', status__in=['open', 'assigned']).select_related('asset_property' )
         ctx['pending_room_service'] = RoomServiceOrder.objects.filter(status='pending').select_related('booking')
         ctx['stats'] = {
             'tasks_today': CleaningTask.objects.filter(scheduled_date=today).count(),
@@ -35,7 +35,7 @@ class CleaningTaskListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        qs = super().get_queryset().select_related('booking_property', 'assigned_to', 'booking')
+        qs = super().get_queryset().select_related('asset_property' , 'assigned_to', 'booking')
         status = self.request.GET.get('status')
         if status:
             qs = qs.filter(status=status)

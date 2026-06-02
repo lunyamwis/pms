@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Integration Logs{% endblock %}
+{% block content %}
+<div class="page-header"><h1 class="page-title">Integration Logs</h1></div>
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-luxe mb-0">
+            <thead><tr><th>Time</th><th>Platform</th><th>Action</th><th>Status</th><th>Booking</th><th>Error</th></tr></thead>
+            <tbody>
+            {% for log in logs %}
+            <tr>
+                <td style="font-size:12px;">{{ log.created_at|date:"d M H:i" }}</td>
+                <td><span class="badge bg-light text-dark">{{ log.get_platform_display }}</span></td>
+                <td style="font-size:13px;">{{ log.get_action_display }}</td>
+                <td><span class="badge {% if log.status == 'success' %}bg-success{% elif log.status == 'failed' %}bg-danger{% else %}bg-warning text-dark{% endif %}">{{ log.get_status_display }}</span></td>
+                <td>{% if log.booking %}<a href="{{ log.booking.get_absolute_url }}" class="text-gold" style="font-size:12px;">{{ log.booking.booking_reference }}</a>{% else %}—{% endif %}</td>
+                <td style="font-size:11px;color:#dc2626;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ log.error_message|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6"><div class="empty-state"><i class="fas fa-list-alt"></i><p>No logs yet</p></div></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if is_paginated %}<div class="card-footer"><nav><ul class="pagination pagination-sm mb-0">{% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">‹</a></li>{% endif %}<li class="page-item active"><a class="page-link" href="#">{{ page_obj.number }}</a></li>{% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">›</a></li>{% endif %}</ul></nav></div>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Booking.com Setup{% endblock %}
+{% block content %}
+<div class="page-header"><h1 class="page-title" style="color:#003580;"><i class="fas fa-building me-2"></i>Booking.com Integration</h1></div>
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">Connect a Property</div>
+            <div class="card-body">
+                <form method="post">{% csrf_token %}
+                    <div class="mb-3"><label class="form-label">Property</label><select name="property" class="form-control">{% for p in request.user.property_set.all %}<option value="{{ p.pk }}">{{ p.title }}</option>{% endfor %}</select></div>
+                    <div class="mb-3"><label class="form-label">Booking.com Hotel ID</label><input name="hotel_id" class="form-control" placeholder="e.g. 1234567"></div>
+                    <div class="mb-3"><label class="form-label">API Username</label><input name="username" class="form-control"></div>
+                    <div class="mb-3"><label class="form-label">API Password</label><input type="password" name="password" class="form-control"></div>
+                    <button type="submit" class="btn btn-primary">Connect</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">Connected Properties</div>
+            <div class="card-body p-0">
+                {% for c in configs %}
+                <div class="d-flex align-items-center gap-3 px-3 py-3 border-bottom">
+                    <div><div class="fw-medium">{{ c.property.title }}</div><div class="text-muted" style="font-size:12px;">Hotel ID: {{ c.hotel_id }}</div></div>
+                    <span class="ms-auto badge {% if c.is_connected %}bg-success{% else %}bg-warning text-dark{% endif %}">{% if c.is_connected %}Connected{% else %}Disconnected{% endif %}</span>
+                </div>
+                {% empty %}<div class="empty-state py-4"><i class="fas fa-plug"></i><p>No properties connected yet</p></div>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

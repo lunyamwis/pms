@@ -11,7 +11,7 @@ def send_booking_confirmation(self, booking_id):
     from integrations.whatsapp import WhatsAppService
     from integrations.models import IntegrationLog
     try:
-        booking = Booking.objects.select_related('guest', 'booking_property').get(pk=booking_id)
+        booking = Booking.objects.select_related('guest', 'asset_property' ).get(pk=booking_id)
         svc = WhatsAppService()
         phone = booking.guest.contact_number
         message = svc.format_booking_confirmation(booking)
@@ -45,7 +45,7 @@ def send_pre_arrival_messages(self):
         check_in_date=tomorrow,
         status='confirmed',
         pre_arrival_sent=False,
-    ).select_related('guest', 'booking_property')
+    ).select_related('guest', 'asset_property' )
     svc = WhatsAppService()
     for booking in bookings:
         try:
@@ -74,7 +74,7 @@ def send_checkout_reminders(self):
     today = timezone.now().date()
     bookings = Booking.objects.filter(
         check_out_date=today, status='checked_in'
-    ).select_related('guest', 'booking_property')
+    ).select_related('guest', 'asset_property' )
     svc = WhatsAppService()
     for booking in bookings:
         try:
@@ -92,7 +92,7 @@ def send_review_request(self, booking_id):
     from bookings.models import Booking, BookingMessage
     from integrations.whatsapp import WhatsAppService
     try:
-        booking = Booking.objects.select_related('guest', 'booking_property').get(pk=booking_id)
+        booking = Booking.objects.select_related('guest', 'asset_property' ).get(pk=booking_id)
         if booking.review_request_sent:
             return
         svc = WhatsAppService()
@@ -133,12 +133,12 @@ def send_receipt(booking_id):
     from financials.models import Receipt
     from integrations.whatsapp import WhatsAppService
     try:
-        booking = Booking.objects.select_related('guest', 'booking_property').get(pk=booking_id)
+        booking = Booking.objects.select_related('guest', 'asset_property' ).get(pk=booking_id)
         receipt = Receipt.objects.filter(booking=booking).first()
         if not receipt:
             return
         svc = WhatsAppService()
-        msg = f"Dear {booking.guest.full_name},\n\nPlease find your receipt for your stay at {booking.property.title}.\n\nReceipt No: {receipt.receipt_number}\nTotal: KSh {receipt.total_amount:,.2f}\n\nThank you!"
+        msg = f"Dear {booking.guest.full_name},\n\nPlease find your receipt for your stay at {booking.asset_property.title}.\n\nReceipt No: {receipt.receipt_number}\nTotal: KSh {receipt.total_amount:,.2f}\n\nThank you!"
         try:
             svc.send_message(booking.guest.contact_number, msg)
             receipt.sent_via_whatsapp = True
@@ -162,7 +162,7 @@ def send_custom_message(booking_id, content, channel='whatsapp'):
     from bookings.models import Booking
     from integrations.whatsapp import WhatsAppService
     try:
-        booking = Booking.objects.select_related('guest', 'booking_property').get(pk=booking_id)
+        booking = Booking.objects.select_related('guest', 'asset_property' ).get(pk=booking_id)
         if channel in ('whatsapp', 'both'):
             svc = WhatsAppService()
             try:
@@ -211,7 +211,7 @@ def _send_email_message(booking, template_type, message):
         return
     try:
         send_mail(
-            subject=f'Message from {booking.property.title}',
+            subject=f'Message from {booking.asset_property.title}',
             message=message,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[booking.guest.email],

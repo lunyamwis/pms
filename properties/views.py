@@ -166,7 +166,7 @@ class PropertySearchView(ListView):
 class PropertyDetailView(DetailView):
     model = Property
     template_name = 'properties/property_detail.html'
-    context_object_name = 'booking_property'
+    context_object_name = 'asset_property' 
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

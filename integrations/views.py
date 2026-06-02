@@ -35,7 +35,7 @@ class BookingComSetupView(LoginRequiredMixin, View):
 
     def post(self, request):
         from properties.models import Property
-        prop_id = request.POST.get('booking_property')
+        prop_id = request.POST.get('asset_property' )
         hotel_id = request.POST.get('hotel_id')
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -72,7 +72,7 @@ class AirbnbSetupView(LoginRequiredMixin, View):
 
     def post(self, request):
         from properties.models import Property
-        prop_id = request.POST.get('booking_property')
+        prop_id = request.POST.get('asset_property' )
         listing_id = request.POST.get('listing_id')
         access_token = request.POST.get('access_token')
         try:

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Financial Dashboard{% endblock %}
+{% block breadcrumb_active %}Financials{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div><h1 class="page-title">Financial Dashboard</h1><p class="page-subtitle">Track income, expenses and profitability</p></div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'financials:cashbook' %}" class="btn btn-gold"><i class="fas fa-book me-2"></i>Open Cashbook</a>
+        <a href="{% url 'financials:report' %}" class="btn btn-light"><i class="fas fa-chart-bar me-2"></i>Reports</a>
+    </div>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3"><div class="stat-card stat-card-emerald"><i class="fas fa-arrow-down stat-icon"></i><div class="stat-label">This Month Income</div><div class="stat-value" style="font-size:22px;">KSh {{ month_income|intcomma }}</div></div></div>
+    <div class="col-6 col-md-3"><div class="stat-card stat-card-navy" style="background:linear-gradient(135deg,#ef4444,#dc2626);"><i class="fas fa-arrow-up stat-icon"></i><div class="stat-label">This Month Expenses</div><div class="stat-value" style="font-size:22px;">KSh {{ month_expense|intcomma }}</div></div></div>
+    <div class="col-6 col-md-3"><div class="stat-card stat-card-gold"><i class="fas fa-coins stat-icon"></i><div class="stat-label">Net Profit</div><div class="stat-value" style="font-size:22px;">KSh {{ month_profit|intcomma }}</div></div></div>
+    <div class="col-6 col-md-3"><div class="stat-card stat-card-purple"><i class="fas fa-wallet stat-icon"></i><div class="stat-label">Current Balance</div><div class="stat-value" style="font-size:22px;">KSh {% if current_balance %}{{ current_balance.balance|intcomma }}{% else %}0{% endif %}</div></div></div>
+</div>
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header"><i class="fas fa-chart-bar text-gold me-2"></i>Monthly Revenue vs Expenses</div>
+            <div class="card-body"><canvas id="finChart" height="100"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header"><i class="fas fa-clock text-gold me-2"></i>Recent Transactions</div>
+            <div class="card-body p-0">
+                {% for e in recent_entries %}
+                <div class="d-flex align-items-center gap-3 px-3 py-2 border-bottom">
+                    <div class="avatar {% if e.entry_type == 'receipt' %}avatar-emerald{% else %}{% endif %}" style="{% if e.entry_type == 'payment' %}background:linear-gradient(135deg,#ef4444,#dc2626);{% endif %} width:28px;height:28px;font-size:11px;"><i class="fas {% if e.entry_type == 'receipt' %}fa-arrow-down{% else %}fa-arrow-up{% endif %}" style="font-size:10px;"></i></div>
+                    <div class="flex-fill"><div style="font-size:13px;font-weight:500;">{{ e.name }}</div><div style="font-size:11px;color:var(--text-muted);">{{ e.date|date:"d M" }}</div></div>
+                    <span style="font-size:13px;font-weight:600;color:{% if e.entry_type == 'receipt' %}#059669{% else %}#dc2626{% endif %};">{% if e.entry_type == 'receipt' %}+{% else %}-{% endif %}{{ e.amount|intcomma }}</span>
+                </div>
+                {% empty %}<div class="empty-state py-4"><i class="fas fa-book-open"></i><p>No transactions yet</p></div>{% endfor %}
+            </div>
+            <div class="card-footer text-center"><a href="{% url 'financials:cashbook' %}" style="font-size:13px;" class="text-gold">View Full Cashbook →</a></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+fetch("{% url 'financials:chart_data' %}")
+    .then(r => r.json())
+    .then(data => {
+        new Chart(document.getElementById('finChart'), {
+            type: 'bar',
+            data: {
+                labels: data.map(d => d.label),
+                datasets: [
+                    { label: 'Income', data: data.map(d => d.income), backgroundColor: 'rgba(16,185,129,0.8)', borderRadius: 6 },
+                    { label: 'Expense', data: data.map(d => d.expense), backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 6 },
+                ]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+        });
+    }).catch(() => {});
+</script>
+{% endblock %}

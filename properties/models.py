@@ -90,7 +90,7 @@ class Property(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = 'booking_property'
+        verbose_name = 'asset_property' 
         verbose_name_plural = 'Properties'
         ordering = ['-created_at']
 
@@ -137,7 +137,7 @@ class PropertyAmenity(models.Model):
         return self.name
 
 class PropertyReview(models.Model):
-    booking_property = models.ForeignKey(Property, related_name='reviews', on_delete=models.CASCADE)
+    asset_property =  models.ForeignKey(Property, related_name='reviews', on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='property_reviews', on_delete=models.CASCADE)
     rating = models.PositiveIntegerField(choices=[(i, i) for i in range(1, 6)])
     comment = models.TextField()
@@ -145,7 +145,7 @@ class PropertyReview(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('booking_property', 'user')
+        unique_together = ('asset_property' , 'user')
         ordering = ['-created_at']
 
     def __str__(self):
@@ -161,7 +161,7 @@ class PropertyUnit(models.Model):
         ('maintenance', 'Maintenance'), ('reserved', 'Reserved'),
     ]
 
-    booking_property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='units')
+    asset_property =  models.ForeignKey(Property, on_delete=models.CASCADE, related_name='units')
     name = models.CharField(max_length=100)
     unit_type = models.CharField(max_length=20, choices=UNIT_TYPE_CHOICES, default='room')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available')
@@ -181,14 +181,14 @@ class PropertyUnit(models.Model):
 
     class Meta:
         ordering = ['name']
-        unique_together = ['booking_property', 'name']
+        unique_together = ['asset_property' , 'name']
 
     def __str__(self):
-        return f"{self.property.title} - {self.name}"
+        return f"{self.asset_property.title} - {self.name}"
 
     def get_absolute_url(self):
         from django.urls import reverse
-        return reverse('properties:unit_detail', kwargs={'pk': self.pk})
+        return reverse('properties:detail', kwargs={'slug': self.asset_property.slug})
 
     def is_available(self, check_in, check_out):
         from bookings.models import Booking

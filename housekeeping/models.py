@@ -53,7 +53,7 @@ class CleaningTask(models.Model):
         ('low', 'Low'), ('normal', 'Normal'), ('high', 'High'), ('urgent', 'Urgent')
     ]
 
-    booking_property = models.ForeignKey(
+    asset_property =  models.ForeignKey(
         'properties.Property', on_delete=models.CASCADE, related_name='cleaning_tasks'
     )
     unit = models.ForeignKey(
@@ -87,7 +87,7 @@ class CleaningTask(models.Model):
         ordering = ['scheduled_date', 'priority']
 
     def __str__(self):
-        return f"{self.property} - {self.get_task_type_display()} - {self.scheduled_date}"
+        return f"{self.asset_property} - {self.get_task_type_display()} - {self.scheduled_date}"
 
     def get_absolute_url(self):
         return reverse('housekeeping:task_detail', kwargs={'pk': self.pk})
@@ -108,7 +108,7 @@ class MaintenanceRequest(models.Model):
         ('in_progress', 'In Progress'), ('resolved', 'Resolved'), ('closed', 'Closed'),
     ]
 
-    booking_property = models.ForeignKey(
+    asset_property =  models.ForeignKey(
         'properties.Property', on_delete=models.CASCADE, related_name='maintenance_requests'
     )
     unit = models.ForeignKey(
@@ -138,7 +138,7 @@ class MaintenanceRequest(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.title} - {self.property} ({self.status})"
+        return f"{self.title} - {self.asset_property} ({self.status})"
 
 
 class RoomServiceOrder(models.Model):

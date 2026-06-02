@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}WhatsApp Setup{% endblock %}
+{% block content %}
+<div class="page-header"><h1 class="page-title" style="color:#25d366;"><i class="fab fa-whatsapp me-2"></i>WhatsApp Setup</h1></div>
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">Twilio WhatsApp Configuration</div>
+            <div class="card-body">
+                <div class="alert alert-info" style="font-size:13px;"><i class="fas fa-info-circle me-2"></i>Get your Twilio credentials from <strong>console.twilio.com</strong>. Enable the WhatsApp sandbox or use a verified Twilio number.</div>
+                <form method="post">{% csrf_token %}
+                    <div class="mb-3"><label class="form-label">Twilio Account SID</label><input name="account_sid" class="form-control" value="{{ config.account_sid|default:'' }}" placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"></div>
+                    <div class="mb-3"><label class="form-label">Auth Token</label><input type="password" name="auth_token" class="form-control" placeholder="Your Twilio Auth Token"></div>
+                    <div class="mb-3"><label class="form-label">WhatsApp From Number</label><input name="from_number" class="form-control" value="{{ config.from_number|default:'' }}" placeholder="whatsapp:+14155238886"></div>
+                    <button type="submit" class="btn btn-success w-100"><i class="fab fa-whatsapp me-2"></i>Save WhatsApp Config</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">Automated Messages</div>
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3 mb-3 p-3 bg-light rounded"><i class="fas fa-calendar-check text-success fa-lg"></i><div><div class="fw-medium" style="font-size:13px;">Booking Confirmation</div><div class="text-muted" style="font-size:12px;">Sent immediately when booking is created</div></div></div>
+                <div class="d-flex align-items-center gap-3 mb-3 p-3 bg-light rounded"><i class="fas fa-clock text-gold fa-lg"></i><div><div class="fw-medium" style="font-size:13px;">Pre-Arrival Message</div><div class="text-muted" style="font-size:12px;">Sent 24 hours before check-in at 9 AM</div></div></div>
+                <div class="d-flex align-items-center gap-3 mb-3 p-3 bg-light rounded"><i class="fas fa-bell text-primary fa-lg"></i><div><div class="fw-medium" style="font-size:13px;">Checkout Reminder</div><div class="text-muted" style="font-size:12px;">Sent morning of checkout at 8 AM</div></div></div>
+                <div class="d-flex align-items-center gap-3 mb-3 p-3 bg-light rounded"><i class="fas fa-star text-warning fa-lg"></i><div><div class="fw-medium" style="font-size:13px;">Review Request</div><div class="text-muted" style="font-size:12px;">Sent 2 hours after checkout</div></div></div>
+                <div class="d-flex align-items-center gap-3 p-3 bg-light rounded"><i class="fas fa-receipt text-purple fa-lg"></i><div><div class="fw-medium" style="font-size:13px;">Receipt</div><div class="text-muted" style="font-size:12px;">Sent automatically after checkout</div></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

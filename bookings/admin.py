@@ -19,7 +19,7 @@ class BookingNoteInline(admin.TabularInline):
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
-    list_display = ['booking_reference', 'guest', 'booking_property', 'check_in_date', 'check_out_date', 'status', 'source', 'total_amount']
+    list_display = ['booking_reference', 'guest', 'asset_property' , 'check_in_date', 'check_out_date', 'status', 'source', 'total_amount']
     list_filter = ['status', 'source', 'check_in_date']
     search_fields = ['booking_reference', 'guest__first_name', 'guest__last_name', 'guest__phone']
     inlines = [BookingPaymentInline, BookingMessageInline, BookingNoteInline]

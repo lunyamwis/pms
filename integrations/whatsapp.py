@@ -64,7 +64,7 @@ class WhatsAppService:
             return tpl.render({
                 'guest_name': booking.guest.full_name,
                 'booking_reference': booking.booking_reference,
-                'property_name': booking.property.title,
+                'property_name': booking.asset_property.title,
                 'check_in_date': booking.check_in_date.strftime('%d %b %Y'),
                 'check_out_date': booking.check_out_date.strftime('%d %b %Y'),
                 'total_nights': booking.total_nights,
@@ -74,17 +74,17 @@ class WhatsAppService:
             })
         return (
             f"Dear {booking.guest.full_name},\n\n"
-            f"Your booking at {booking.property.title} is confirmed!\n\n"
+            f"Your booking at {booking.asset_property.title} is confirmed!\n\n"
             f"Reference: {booking.booking_reference}\n"
             f"Check-in: {booking.check_in_date.strftime('%d %b %Y')}\n"
             f"Check-out: {booking.check_out_date.strftime('%d %b %Y')}\n"
             f"Nights: {booking.total_nights}\n"
             f"Total: KSh {booking.total_amount:,.2f}\n\n"
-            f"We look forward to hosting you!\n\nWarm regards,\n{booking.property.title}"
+            f"We look forward to hosting you!\n\nWarm regards,\n{booking.asset_property.title}"
         )
 
     def format_pre_arrival(self, booking) -> str:
-        prop = booking.property
+        prop = booking.asset_property
         return (
             f"Hello {booking.guest.full_name}! 👋\n\n"
             f"Your stay at {prop.title} starts tomorrow ({booking.check_in_date.strftime('%d %b')}).\n\n"
@@ -97,18 +97,18 @@ class WhatsAppService:
     def format_review_request(self, booking) -> str:
         return (
             f"Dear {booking.guest.full_name},\n\n"
-            f"Thank you for staying at {booking.property.title}! 🌟\n\n"
+            f"Thank you for staying at {booking.asset_property.title}! 🌟\n\n"
             f"We hope you had a wonderful experience. "
             f"Would you mind leaving us a review? It really helps us improve and helps "
             f"other travelers find great accommodation.\n\n"
-            f"Your feedback means the world to us!\n\nWarm regards,\n{booking.property.title}"
+            f"Your feedback means the world to us!\n\nWarm regards,\n{booking.asset_property.title}"
         )
 
     def format_checkout_reminder(self, booking) -> str:
         return (
             f"Good morning {booking.guest.full_name}! ☀️\n\n"
             f"This is a friendly reminder that today is your checkout day.\n"
-            f"Check-out time: By {booking.property.check_out_time or '11:00 AM'}\n\n"
+            f"Check-out time: By {booking.asset_property.check_out_time or '11:00 AM'}\n\n"
             f"Please ensure you leave the key/access card at the designated spot.\n\n"
-            f"Thank you for choosing {booking.property.title}! 🙏"
+            f"Thank you for choosing {booking.asset_property.title}! 🙏"
         )

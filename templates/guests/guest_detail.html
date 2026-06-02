@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}{{ guest.full_name }}{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center gap-3">
+        <div class="avatar {% if guest.is_vip %}avatar-gold{% else %}avatar-emerald{% endif %}" style="width:56px;height:56px;font-size:22px;">{{ guest.first_name|first }}{{ guest.last_name|first }}</div>
+        <div>
+            <h1 class="page-title mb-0">{{ guest.full_name }}</h1>
+            <div class="d-flex gap-2 mt-1">
+                {% if guest.is_vip %}<span class="badge badge-gold"><i class="fas fa-star me-1"></i>VIP</span>{% endif %}
+                {% if guest.is_blacklisted %}<span class="badge bg-danger">Blacklisted</span>{% endif %}
+                {% if guest.is_repeat_guest %}<span class="badge bg-info text-white">Repeat Guest</span>{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'guests:update' guest.pk %}" class="btn btn-light btn-sm"><i class="fas fa-pencil me-1"></i>Edit</a>
+        <a href="{% url 'bookings:create' %}?guest={{ guest.pk }}" class="btn btn-gold btn-sm"><i class="fas fa-calendar-plus me-1"></i>New Booking</a>
+        {% if not guest.is_blacklisted %}
+        <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#blacklistModal"><i class="fas fa-ban me-1"></i>Blacklist</button>
+        {% else %}
+        <form method="post" action="{% url 'guests:blacklist' guest.pk %}" class="d-inline">{% csrf_token %}<button type="submit" class="btn btn-outline-success btn-sm"><i class="fas fa-undo me-1"></i>Remove from Blacklist</button></form>
+        {% endif %}
+    </div>
+</div>
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header"><i class="fas fa-address-card text-gold me-2"></i>Contact Info</div>
+            <div class="card-body">
+                <div class="mb-2"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);">Phone</div><div class="fw-medium">{{ guest.phone }}</div></div>
+                {% if guest.whatsapp_number %}<div class="mb-2"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);">WhatsApp</div><a href="https://wa.me/{{ guest.whatsapp_number }}" target="_blank" class="text-success"><i class="fab fa-whatsapp me-1"></i>{{ guest.whatsapp_number }}</a></div>{% endif %}
+                {% if guest.email %}<div class="mb-2"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);">Email</div><div class="fw-medium">{{ guest.email }}</div></div>{% endif %}
+                {% if guest.nationality %}<div class="mb-2"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);">Nationality</div><div>{{ guest.nationality }}</div></div>{% endif %}
+                {% if guest.id_number %}<div class="mb-2"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);">ID ({{ guest.get_id_type_display }})</div><div>{{ guest.id_number }}</div></div>{% endif %}
+                {% if guest.notes %}<div class="mt-3 p-2 bg-light rounded" style="font-size:13px;"><i class="fas fa-sticky-note me-1 text-muted"></i>{{ guest.notes }}</div>{% endif %}
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><i class="fas fa-chart-line text-gold me-2"></i>Stay Stats</div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2"><span class="text-muted">Total Stays</span><span class="fw-semibold">{{ guest.total_bookings }}</span></div>
+                <div class="d-flex justify-content-between mb-2"><span class="text-muted">Total Spent</span><span class="fw-semibold text-gold">KSh {{ guest.total_spent|intcomma }}</span></div>
+                {% if guest.last_stay %}<div class="d-flex justify-content-between"><span class="text-muted">Last Stay</span><span>{{ guest.last_stay|date:"d M Y" }}</span></div>{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header"><i class="fas fa-calendar-alt text-gold me-2"></i>Booking History</div>
+            <div class="card-body p-0">
+                <table class="table table-luxe mb-0">
+                    <thead><tr><th>Reference</th><th>Property</th><th>Dates</th><th>Nights</th><th>Amount</th><th>Status</th></tr></thead>
+                    <tbody>
+                    {% for b in bookings %}
+                    <tr>
+                        <td><a href="{{ b.get_absolute_url }}" class="fw-semibold text-gold">{{ b.booking_reference }}</a></td>
+                        <td>{{ b.asset_property.title|truncatechars:20 }}</td>
+                        <td style="font-size:12px;">{{ b.check_in_date|date:"d M Y" }}</td>
+                        <td class="text-center">{{ b.total_nights }}</td>
+                        <td>KSh {{ b.total_amount|intcomma }}</td>
+                        <td><span class="badge badge-{{ b.status }}">{{ b.get_status_display }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted py-3">No bookings yet</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="blacklistModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content" style="border-radius:14px;"><div class="modal-header border-0"><h5 class="modal-title text-danger">Blacklist Guest</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+<form method="post" action="{% url 'guests:blacklist' guest.pk %}">{% csrf_token %}<div class="modal-body"><textarea name="reason" class="form-control" rows="3" placeholder="Reason for blacklisting..."></textarea></div><div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Blacklist</button></div></form></div></div></div>
+{% endblock %}

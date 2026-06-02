@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Maintenance{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between"><div><h1 class="page-title">Maintenance Requests</h1></div><a href="{% url 'housekeeping:maintenance_create' %}" class="btn btn-gold"><i class="fas fa-plus me-2"></i>Report Issue</a></div>
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-luxe mb-0">
+            <thead><tr><th>Issue</th><th>Property</th><th>Category</th><th>Priority</th><th>Status</th><th>Reported</th><th></th></tr></thead>
+            <tbody>
+            {% for r in requests %}
+            <tr>
+                <td class="fw-medium">{{ r.title }}</td>
+                <td>{{ r.asset_property.title }}</td>
+                <td><span class="badge bg-light text-dark">{{ r.get_category_display }}</span></td>
+                <td><span class="badge {% if r.priority == 'urgent' %}bg-danger{% elif r.priority == 'high' %}bg-warning text-dark{% elif r.priority == 'medium' %}bg-info text-white{% else %}bg-secondary{% endif %}">{{ r.get_priority_display }}</span></td>
+                <td><span class="badge {% if r.status == 'resolved' %}bg-success{% elif r.status == 'in_progress' %}bg-primary{% else %}bg-secondary{% endif %}">{{ r.get_status_display }}</span></td>
+                <td style="font-size:12px;">{{ r.created_at|date:"d M" }}</td>
+                <td><a href="{% url 'housekeeping:maintenance_update' r.pk %}" class="btn btn-icon btn-light btn-sm"><i class="fas fa-pencil"></i></a></td>
+            </tr>
+            {% empty %}<tr><td colspan="7"><div class="empty-state"><i class="fas fa-tools"></i><p>No maintenance requests</p></div></td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -12,6 +12,7 @@ User = get_user_model()
 def make_user(email='fin@test.com'):
     u = User.objects.create_user(username=email, email=email, password='testpass123')
     u.role = 'agent'
+    u.email_verified = True
     u.save()
     return u
 
@@ -114,7 +115,7 @@ class ReceiptModelTests(TestCase):
         import datetime
         today = timezone.now().date()
         return Booking.objects.create(
-            property=prop, guest=guest, managed_by=self.user,
+            asset_property=prop, guest=guest, managed_by=self.user,
             check_in_date=today + datetime.timedelta(days=1),
             check_out_date=today + datetime.timedelta(days=4),
             room_rate=Decimal('2500.00'), source='direct'

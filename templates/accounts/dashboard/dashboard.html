@@ -116,7 +116,7 @@
                         <div class="schedule-time"><i class="fas fa-arrow-down text-success"></i></div>
                         <div class="schedule-info">
                             <div class="schedule-name">{{ b.guest.full_name }}</div>
-                            <div class="schedule-prop">Check-in · {{ b.property.title }}</div>
+                            <div class="schedule-prop">Check-in · {{ b.property_.title }}</div>
                         </div>
                         <span class="badge badge-confirmed">IN</span>
                     </div>
@@ -126,7 +126,7 @@
                         <div class="schedule-time"><i class="fas fa-arrow-up text-warning"></i></div>
                         <div class="schedule-info">
                             <div class="schedule-name">{{ b.guest.full_name }}</div>
-                            <div class="schedule-prop">Checkout · {{ b.property.title }}</div>
+                            <div class="schedule-prop">Checkout · {{ b.property_.title }}</div>
                         </div>
                         <span class="badge badge-checked_in">OUT</span>
                     </div>
@@ -164,7 +164,7 @@
                                         <span class="fw-medium">{{ b.guest.full_name }}</span>
                                     </div>
                                 </td>
-                                <td class="text-muted">{{ b.property.title|truncatechars:20 }}</td>
+                                <td class="text-muted">{{ b.property_.title|truncatechars:20 }}</td>
                                 <td style="font-size:12px;">{{ b.check_in_date|date:"d M" }} → {{ b.check_out_date|date:"d M" }}</td>
                                 <td class="fw-semibold">KSh {{ b.total_amount|intcomma }}</td>
                                 <td><span class="badge badge-{{ b.status }}">{{ b.get_status_display }}</span></td>

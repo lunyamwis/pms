@@ -5,9 +5,9 @@ from .models import CleaningTask, MaintenanceRequest, RoomServiceOrder, Housekee
 class CleaningTaskForm(forms.ModelForm):
     class Meta:
         model = CleaningTask
-        fields = ['booking_property', 'unit', 'booking', 'assigned_to', 'task_type', 'priority',
+        fields = ['asset_property' , 'unit', 'booking', 'assigned_to', 'task_type', 'priority',
                   'scheduled_date', 'scheduled_time', 'estimated_duration_minutes', 'notes']
-        widgets = {f: forms.Select(attrs={'class': 'form-control'}) for f in ['booking_property', 'unit', 'booking', 'assigned_to', 'task_type', 'priority']}
+        widgets = {f: forms.Select(attrs={'class': 'form-control'}) for f in ['asset_property' , 'unit', 'booking', 'assigned_to', 'task_type', 'priority']}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -22,9 +22,9 @@ class CleaningTaskForm(forms.ModelForm):
 class MaintenanceRequestForm(forms.ModelForm):
     class Meta:
         model = MaintenanceRequest
-        fields = ['booking_property', 'unit', 'title', 'description', 'category', 'priority', 'reported_by']
+        fields = ['asset_property' , 'unit', 'title', 'description', 'category', 'priority', 'reported_by']
         widgets = {
-            'booking_property': forms.Select(attrs={'class': 'form-control'}),
+            'asset_property' : forms.Select(attrs={'class': 'form-control'}),
             'unit': forms.Select(attrs={'class': 'form-control'}),
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),

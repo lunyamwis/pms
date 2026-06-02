@@ -86,7 +86,7 @@ class PropertyViewSet(viewsets.ModelViewSet):
         for image in images:
             serializer = PropertyImageSerializer(data={
                 'image': image,
-                'booking_property': property_obj.id
+                'asset_property' : property_obj.id
             })
             if serializer.is_valid():
                 serializer.save(property=property_obj)

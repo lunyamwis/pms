@@ -159,14 +159,14 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 total_bookings = bookings_qs.count()
                 active_bookings = bookings_qs.filter(status='checked_in').count()
                 context['recent_bookings'] = bookings_qs.select_related(
-                    'guest', 'booking_property'
+                    'guest', 'property'
                 ).order_by('-created_at')[:8]
                 context['todays_checkins'] = bookings_qs.filter(
                     check_in_date=today, status='confirmed'
-                ).select_related('guest', 'booking_property')
+                ).select_related('guest', 'property')
                 context['todays_checkouts'] = bookings_qs.filter(
                     check_out_date=today, status='checked_in'
-                ).select_related('guest', 'booking_property')
+                ).select_related('guest', 'property')
             except Exception:
                 total_bookings = 0
                 active_bookings = 0
@@ -187,7 +187,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 from housekeeping.models import MaintenanceRequest
                 context['open_maintenance'] = MaintenanceRequest.objects.filter(
                     status__in=['open', 'assigned']
-                ).select_related('booking_property').order_by('-priority')[:5]
+                ).select_related('asset_property' ).order_by('-priority')[:5]
             except Exception:
                 context['open_maintenance'] = []
 
@@ -212,7 +212,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             ] if True else []
 
             # Legacy data still needed by old templates
-            context['recent_inquiries'] = user.property_inquiries.select_related('booking_property').order_by('-created_at')[:5]
+            context['recent_inquiries'] = user.property_inquiries.select_related('asset_property' ).order_by('-created_at')[:5]
             context['favorite_properties'] = user.favorite_properties.all()[:4]
             context['saved_searches'] = user.saved_searches.all()[:3]
 
@@ -237,7 +237,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
         user = self.request.user
         context['favorite_properties'] = user.favorite_properties.all()[:4]
         context['saved_searches'] = user.saved_searches.all()[:4]
-        context['recent_inquiries'] = user.property_inquiries.select_related('booking_property').order_by('-created_at')[:4]
+        context['recent_inquiries'] = user.property_inquiries.select_related('asset_property' ).order_by('-created_at')[:4]
         return context
 
 class ProfileUpdateView(LoginRequiredMixin, UpdateView):
@@ -302,7 +302,7 @@ class UserInquiriesView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return PropertyInquiry.objects.filter(user=self.request.user).select_related('booking_property')
+        return PropertyInquiry.objects.filter(user=self.request.user).select_related('asset_property' )
 
 class UserReviewsView(LoginRequiredMixin, ListView):
     template_name = 'accounts/dashboard/reviews.html'
@@ -310,7 +310,7 @@ class UserReviewsView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return self.request.user.property_reviews.select_related('booking_property')
+        return self.request.user.property_reviews.select_related('asset_property' )
 
 class SaveSearchView(LoginRequiredMixin, CreateView):
     model = SavedSearch

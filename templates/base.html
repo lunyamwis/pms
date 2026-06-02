@@ -236,12 +236,18 @@
         .gap-2 { gap: 8px !important; }
         .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1035; }
         .sidebar-overlay.show { display: block; }
+
+        /* ===== GUEST (unauthenticated) MODE ===== */
+        .topbar-guest { left: 0; }
+        .main-content-guest { margin-left: 0; }
+        .guest-mode .topbar { left: 0; }
         {% block extra_css %}{% endblock %}
     </style>
     {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body class="{% if not user.is_authenticated %}guest-mode{% endif %}">
 
+{% if user.is_authenticated %}
 <!-- Sidebar Overlay (mobile) -->
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
@@ -358,18 +364,24 @@
             </a>
         </div>
         <div class="nav-item">
-            <a href="{% url 'accounts:logout' %}" class="nav-link">
-                <span class="nav-icon"><i class="fas fa-sign-out-alt"></i></span> Sign Out
-            </a>
+            <form method="post" action="{% url 'accounts:logout' %}" style="margin:0;">
+                {% csrf_token %}
+                <button type="submit" class="nav-link w-100 text-start border-0 bg-transparent">
+                    <span class="nav-icon"><i class="fas fa-sign-out-alt"></i></span> Sign Out
+                </button>
+            </form>
         </div>
     </nav>
 </nav>
+{% endif %}
 
 <!-- ===== TOPBAR ===== -->
-<header class="topbar">
+<header class="topbar {% if not user.is_authenticated %}topbar-guest{% endif %}">
+    {% if user.is_authenticated %}
     <button class="topbar-toggle" onclick="toggleSidebar()">
         <i class="fas fa-bars fa-sm"></i>
     </button>
+    {% endif %}
 
     <nav class="breadcrumb-nav d-none d-md-flex align-items-center gap-1">
         {% block breadcrumbs %}
@@ -421,7 +433,14 @@
             <li><a class="dropdown-item" href="{% url 'accounts:profile' %}"><i class="fas fa-user me-2 text-muted"></i>My Profile</a></li>
             <li><a class="dropdown-item" href="{% url 'accounts:profile_edit' %}"><i class="fas fa-cog me-2 text-muted"></i>Settings</a></li>
             <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item text-danger" href="{% url 'accounts:logout' %}"><i class="fas fa-sign-out-alt me-2"></i>Sign Out</a></li>
+            <li>
+                <form method="post" action="{% url 'accounts:logout' %}" style="margin:0;">
+                    {% csrf_token %}
+                    <button type="submit" class="dropdown-item text-danger border-0 bg-transparent w-100 text-start">
+                        <i class="fas fa-sign-out-alt me-2"></i>Sign Out
+                    </button>
+                </form>
+            </li>
         </ul>
     </div>
     {% else %}
@@ -430,7 +449,7 @@
 </header>
 
 <!-- ===== MAIN CONTENT ===== -->
-<main class="main-content">
+<main class="main-content {% if not user.is_authenticated %}main-content-guest{% endif %}">
     <div class="content-wrapper">
         <!-- Django Messages -->
         {% if messages %}

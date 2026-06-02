@@ -49,7 +49,7 @@ class GuestDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['doc_form'] = GuestDocumentForm()
-        ctx['bookings'] = self.object.bookings.select_related('booking_property').order_by('-check_in_date')
+        ctx['bookings'] = self.object.bookings.select_related('asset_property' ).order_by('-check_in_date')
         return ctx
 
 

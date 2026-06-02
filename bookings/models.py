@@ -49,7 +49,7 @@ class Booking(models.Model):
     ]
 
     booking_reference = models.CharField(max_length=20, unique=True, editable=False)
-    booking_property = models.ForeignKey(
+    asset_property =  models.ForeignKey(
         'properties.Property', on_delete=models.PROTECT, related_name='bookings'
     )
     unit = models.ForeignKey(

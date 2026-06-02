@@ -48,7 +48,7 @@ class ContactView(FormView):
         agent_id = self.request.GET.get('agent_id')
         
         if property_id:
-            context['booking_property'] = Property.objects.filter(id=property_id).first()
+            context['asset_property' ] = Property.objects.filter(id=property_id).first()
         if agent_id:
             context['agent'] = Agent.objects.filter(id=agent_id).first()
             
@@ -75,7 +75,7 @@ class ContactView(FormView):
         if data['property_id']:
             try:
                 property_obj = Property.objects.get(id=data['property_id'])
-                email_context['booking_property'] = property_obj
+                email_context['asset_property' ] = property_obj
             except Property.DoesNotExist:
                 pass
                 

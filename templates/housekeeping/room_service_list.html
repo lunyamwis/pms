@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Room Service{% endblock %}
+{% block content %}
+<div class="page-header"><h1 class="page-title">Room Service Orders</h1></div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-luxe mb-0">
+    <thead><tr><th>Booking</th><th>Guest</th><th>Amount</th><th>Status</th><th>Requested</th></tr></thead>
+    <tbody>
+    {% for o in orders %}
+    <tr>
+        <td><a href="{{ o.booking.get_absolute_url }}" class="text-gold">{{ o.booking.booking_reference }}</a></td>
+        <td>{{ o.booking.guest.full_name }}</td>
+        <td>KSh {{ o.total_amount }}</td>
+        <td><span class="badge {% if o.status == 'delivered' %}bg-success{% elif o.status == 'in_progress' %}bg-primary{% elif o.status == 'pending' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ o.get_status_display }}</span></td>
+        <td style="font-size:12px;">{{ o.requested_at|date:"d M H:i" }}</td>
+    </tr>
+    {% empty %}<tr><td colspan="5"><div class="empty-state"><i class="fas fa-concierge-bell"></i><p>No room service orders</p></div></td></tr>{% endfor %}
+    </tbody>
+</table>
+</div></div>
+{% endblock %}

@@ -22,7 +22,7 @@ class BookingListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         qs = Booking.objects.filter(
             managed_by=self.request.user
-        ).select_related('guest', 'booking_property', 'unit')
+        ).select_related('guest', 'asset_property' , 'unit')
         form = BookingSearchForm(self.request.GET)
         if form.is_valid():
             if form.cleaned_data.get('search'):
@@ -150,7 +150,7 @@ class CheckOutView(LoginRequiredMixin, View):
             try:
                 from housekeeping.models import CleaningTask
                 CleaningTask.objects.create(
-                    property=booking.property,
+                    asset_property=booking.asset_property,
                     unit=booking.unit,
                     booking=booking,
                     task_type='checkout_clean',
@@ -192,7 +192,7 @@ class RecordPaymentView(LoginRequiredMixin, View):
                     entry_type='receipt',
                     category='room_booking',
                     amount=payment.amount,
-                    property=booking.property,
+                    asset_property=booking.asset_property,
                     booking=booking,
                     reference=payment.reference_number,
                     payment_method=payment.payment_method,
@@ -214,7 +214,7 @@ class GenerateReceiptView(LoginRequiredMixin, View):
             booking=booking,
             defaults={
                 'guest_name': booking.guest.full_name,
-                'property_name': booking.property.title,
+                'property_name': booking.asset_property.title,
                 'check_in_date': booking.check_in_date,
                 'check_out_date': booking.check_out_date,
                 'room_rate': booking.room_rate,
@@ -291,7 +291,7 @@ class CalendarEventsAPIView(LoginRequiredMixin, View):
     def get(self, request):
         bookings = Booking.objects.filter(
             managed_by=request.user
-        ).select_related('guest', 'booking_property')
+        ).select_related('guest', 'asset_property' )
         COLOR_MAP = {
             'pending': '#f59e0b',
             'confirmed': '#3b82f6',
@@ -304,7 +304,7 @@ class CalendarEventsAPIView(LoginRequiredMixin, View):
         for b in bookings:
             events.append({
                 'id': b.pk,
-                'title': f'{b.guest.full_name} - {b.property.title}',
+                'title': f'{b.guest.full_name} - {b.asset_property.title}',
                 'start': str(b.check_in_date),
                 'end': str(b.check_out_date),
                 'color': COLOR_MAP.get(b.status, '#6b7280'),

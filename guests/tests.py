@@ -12,6 +12,7 @@ User = get_user_model()
 def make_user(email='mgr@test.com', password='testpass123'):
     u = User.objects.create_user(username=email, email=email, password=password, first_name='Test', last_name='Mgr')
     u.role = 'agent'
+    u.email_verified = True
     u.save()
     return u
 
@@ -86,7 +87,7 @@ class GuestFormTests(TestCase):
     def test_guest_form_valid(self):
         """GuestForm is valid with required fields."""
         from guests.forms import GuestForm
-        form = GuestForm(data={'first_name': 'Bob', 'last_name': 'Jones', 'phone': '+254700000001'})
+        form = GuestForm(data={'first_name': 'Bob', 'last_name': 'Jones', 'phone': '+254700000001', 'language_preference': 'en'})
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_guest_form_missing_phone_invalid(self):
@@ -125,7 +126,8 @@ class GuestViewTests(TestCase):
     def test_guest_create_post(self):
         count_before = Guest.objects.count()
         resp = self.client.post(reverse('guests:create'), {
-            'first_name': 'New', 'last_name': 'Guest', 'phone': '+254711111111'
+            'first_name': 'New', 'last_name': 'Guest',
+            'phone': '+254711111111', 'language_preference': 'en'
         })
         self.assertEqual(Guest.objects.count(), count_before + 1)
 

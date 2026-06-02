@@ -10,31 +10,39 @@ from bookings.models import Booking, BookingPayment, BookingMessage, BookingNote
 User = get_user_model()
 
 
-def make_user(email='mgr@test.com', password='testpass123', role='agent'):
+_cnt = [0]
+
+
+def make_user(email=None, password='testpass123', role='agent'):
+    _cnt[0] += 1
+    email = email or f'mgr{_cnt[0]}@test.com'
     u = User.objects.create_user(
         username=email, email=email, password=password,
         first_name='Test', last_name='Manager'
     )
     u.role = role
+    u.email_verified = True
     u.save()
     return u
 
 
 def make_guest():
+    _cnt[0] += 1
     from guests.models import Guest
     return Guest.objects.create(
         first_name='Jane', last_name='Doe',
-        phone='+254700000000', whatsapp_number='+254700000000',
-        email='jane@test.com'
+        phone=f'+25470000{_cnt[0]:04d}', whatsapp_number=f'+25470000{_cnt[0]:04d}',
+        email=f'jane{_cnt[0]}@test.com'
     )
 
 
 def make_property(owner):
+    _cnt[0] += 1
     from properties.models import Property
     return Property.objects.create(
-        title='Test Villa', slug='test-villa', property_type='apartment',
-        listing_type='rent', status='available', price=2500,
-        address='123 Test St', city='Machakos', country='Kenya',
+        title=f'Test Villa {_cnt[0]}', slug=f'test-villa-{_cnt[0]}',
+        property_type='apartment', listing_type='rent', status='available',
+        price=2500, address='123 Test St', city='Machakos', country='Kenya',
         owner=owner, bedrooms=1, bathrooms=1, area=30
     )
 
@@ -46,7 +54,7 @@ def make_booking(managed_by, guest=None, prop=None):
         prop = make_property(managed_by)
     today = timezone.now().date()
     return Booking.objects.create(
-        property=prop, guest=guest, managed_by=managed_by,
+        asset_property=prop, guest=guest, managed_by=managed_by,
         check_in_date=today + datetime.timedelta(days=2),
         check_out_date=today + datetime.timedelta(days=5),
         room_rate=Decimal('2500.00'),
@@ -174,7 +182,7 @@ class BookingFormTests(TestCase):
         """BookingForm is valid with correct data."""
         from bookings.forms import BookingForm
         form = BookingForm(data={
-            'booking_property': self.prop.pk,
+            'asset_property' : self.prop.pk,
             'guest': self.guest.pk,
             'check_in_date': self.today + datetime.timedelta(days=3),
             'check_out_date': self.today + datetime.timedelta(days=6),
@@ -194,7 +202,7 @@ class BookingFormTests(TestCase):
         """BookingForm is invalid if checkout is before checkin."""
         from bookings.forms import BookingForm
         form = BookingForm(data={
-            'booking_property': self.prop.pk,
+            'asset_property' : self.prop.pk,
             'guest': self.guest.pk,
             'check_in_date': self.today + datetime.timedelta(days=5),
             'check_out_date': self.today + datetime.timedelta(days=3),

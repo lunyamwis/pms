@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Integrations{% endblock %}
+{% block breadcrumb_active %}Integrations{% endblock %}
+{% block content %}
+<div class="page-header"><h1 class="page-title">Platform Integrations</h1><p class="page-subtitle">Connect Booking.com, Airbnb and WhatsApp</p></div>
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center p-4">
+                <div style="font-size:48px;color:#003580;margin-bottom:16px;"><i class="fas fa-building"></i></div>
+                <h5 class="fw-bold mb-2">Booking.com</h5>
+                {% if bookingcom_configs %}<span class="badge bg-success mb-3">{{ bookingcom_configs|length }} Connected</span>{% else %}<span class="badge bg-warning text-dark mb-3">Not Connected</span>{% endif %}
+                <p class="text-muted" style="font-size:13px;">Sync reservations, confirm bookings, message guests and close dates.</p>
+                <a href="{% url 'integrations:bookingcom_setup' %}" class="btn btn-primary w-100">{% if bookingcom_configs %}Manage{% else %}Connect{% endif %}</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center p-4">
+                <div style="font-size:48px;color:#ff5a5f;margin-bottom:16px;"><i class="fab fa-airbnb"></i></div>
+                <h5 class="fw-bold mb-2">Airbnb</h5>
+                {% if airbnb_configs %}<span class="badge bg-success mb-3">{{ airbnb_configs|length }} Connected</span>{% else %}<span class="badge bg-warning text-dark mb-3">Not Connected</span>{% endif %}
+                <p class="text-muted" style="font-size:13px;">Sync Airbnb reservations, message guests and request reviews.</p>
+                <a href="{% url 'integrations:airbnb_setup' %}" class="btn btn-primary w-100">{% if airbnb_configs %}Manage{% else %}Connect{% endif %}</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center p-4">
+                <div style="font-size:48px;color:#25d366;margin-bottom:16px;"><i class="fab fa-whatsapp"></i></div>
+                <h5 class="fw-bold mb-2">WhatsApp</h5>
+                {% if whatsapp_configs %}<span class="badge bg-success mb-3">Active</span>{% else %}<span class="badge bg-warning text-dark mb-3">Not Configured</span>{% endif %}
+                <p class="text-muted" style="font-size:13px;">Auto-send confirmations, pre-arrivals, receipts and review requests.</p>
+                <a href="{% url 'integrations:whatsapp_setup' %}" class="btn btn-primary w-100">{% if whatsapp_configs %}Manage{% else %}Setup{% endif %}</a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header section-header"><span><i class="fas fa-envelope-open-text text-gold me-2"></i>Message Templates</span><a href="{% url 'integrations:templates' %}" class="btn btn-sm btn-light">Manage</a></div>
+            <div class="card-body p-0">
+                <div class="px-3 py-2 border-bottom"><i class="fas fa-check-circle text-success me-2"></i><span style="font-size:13px;">Booking Confirmation</span></div>
+                <div class="px-3 py-2 border-bottom"><i class="fas fa-check-circle text-success me-2"></i><span style="font-size:13px;">Pre-Arrival Instructions</span></div>
+                <div class="px-3 py-2 border-bottom"><i class="fas fa-check-circle text-success me-2"></i><span style="font-size:13px;">Checkout Reminder</span></div>
+                <div class="px-3 py-2 border-bottom"><i class="fas fa-check-circle text-success me-2"></i><span style="font-size:13px;">Review Request</span></div>
+                <div class="px-3 py-2"><i class="fas fa-check-circle text-success me-2"></i><span style="font-size:13px;">Receipt</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header section-header"><span><i class="fas fa-list-alt text-gold me-2"></i>Recent Sync Logs</span><a href="{% url 'integrations:logs' %}" class="btn btn-sm btn-light">All Logs</a></div>
+            <div class="card-body p-0">
+                {% for log in recent_logs %}
+                <div class="d-flex align-items-center gap-3 px-3 py-2 border-bottom">
+                    <span class="badge {% if log.status == 'success' %}bg-success{% elif log.status == 'failed' %}bg-danger{% else %}bg-warning text-dark{% endif %}" style="font-size:9px;">{{ log.status|upper }}</span>
+                    <div class="flex-fill" style="font-size:12px;"><span class="fw-medium">{{ log.get_platform_display }}</span> · {{ log.get_action_display }}</div>
+                    <span class="text-muted" style="font-size:11px;">{{ log.created_at|timesince }} ago</span>
+                </div>
+                {% empty %}<div class="empty-state py-3"><i class="fas fa-sync"></i><p style="font-size:13px;">No sync activity yet</p></div>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

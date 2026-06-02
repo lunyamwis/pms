@@ -12,14 +12,14 @@ class BookingForm(forms.ModelForm):
     class Meta:
         model = Booking
         fields = [
-            'booking_property', 'unit', 'guest', 'check_in_date', 'check_out_date',
+            'asset_property' , 'unit', 'guest', 'check_in_date', 'check_out_date',
             'num_adults', 'num_children', 'room_rate', 'cleaning_fee',
             'service_fee', 'tax_amount', 'discount_amount', 'deposit_amount',
             'deposit_paid', 'source', 'external_booking_id',
             'special_requests', 'internal_notes',
         ]
         widgets = {
-            'booking_property': forms.Select(attrs={'class': 'form-control'}),
+            'asset_property' : forms.Select(attrs={'class': 'form-control'}),
             'unit': forms.Select(attrs={'class': 'form-control'}),
             'guest': forms.Select(attrs={'class': 'form-control'}),
             'num_adults': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),

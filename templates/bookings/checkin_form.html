@@ -4,7 +4,7 @@
 <div class="page-header"><h1 class="page-title text-success"><i class="fas fa-arrow-down me-2"></i>Check In Guest</h1></div>
 <div class="card" style="max-width:500px;">
     <div class="card-body">
-        <div class="alert alert-info mb-4">Checking in <strong>{{ booking.guest.full_name }}</strong> for <strong>{{ booking.property.title }}</strong></div>
+        <div class="alert alert-info mb-4">Checking in <strong>{{ booking.guest.full_name }}</strong> for <strong>{{ booking.property_.title }}</strong></div>
         <form method="post">
             {% csrf_token %}
             <div class="mb-3"><label class="form-label">Check-in Time</label>{{ form.check_in_time }}</div>

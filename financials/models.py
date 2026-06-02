@@ -35,7 +35,7 @@ class CashbookEntry(models.Model):
     entry_type = models.CharField(max_length=10, choices=ENTRY_TYPE_CHOICES)
     category = models.CharField(max_length=30, choices=CATEGORY_CHOICES, default='room_booking')
     amount = models.DecimalField(max_digits=12, decimal_places=2)
-    booking_property = models.ForeignKey(
+    asset_property =  models.ForeignKey(
         'properties.Property', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='cashbook_entries'
     )
@@ -142,7 +142,7 @@ class Receipt(models.Model):
 class Budget(models.Model):
     CATEGORY_CHOICES = CashbookEntry.CATEGORY_CHOICES
 
-    booking_property = models.ForeignKey(
+    asset_property =  models.ForeignKey(
         'properties.Property', on_delete=models.CASCADE, related_name='budgets'
     )
     period_start = models.DateField()
@@ -154,15 +154,15 @@ class Budget(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ['booking_property', 'period_start', 'period_end', 'category']
+        unique_together = ['asset_property' , 'period_start', 'period_end', 'category']
 
     def __str__(self):
-        return f"{self.property} - {self.category} - {self.period_start}"
+        return f"{self.asset_property} - {self.category} - {self.period_start}"
 
     @property
     def actual_amount(self):
         return CashbookEntry.objects.filter(
-            property=self.property,
+            asset_property=self.asset_property,
             date__range=[self.period_start, self.period_end],
             category=self.category,
         ).aggregate(total=Sum('amount'))['total'] or 0

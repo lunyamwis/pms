@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Airbnb Setup{% endblock %}
+{% block content %}
+<div class="page-header"><h1 class="page-title" style="color:#ff5a5f;"><i class="fab fa-airbnb me-2"></i>Airbnb Integration</h1></div>
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">Connect Airbnb Listing</div>
+            <div class="card-body">
+                <form method="post">{% csrf_token %}
+                    <div class="mb-3"><label class="form-label">Property</label><select name="property" class="form-control">{% for p in request.user.property_set.all %}<option value="{{ p.pk }}">{{ p.title }}</option>{% endfor %}</select></div>
+                    <div class="mb-3"><label class="form-label">Airbnb Listing ID</label><input name="listing_id" class="form-control" placeholder="e.g. 98765432"></div>
+                    <div class="mb-3"><label class="form-label">Access Token</label><input name="access_token" class="form-control" placeholder="OAuth access token from Airbnb"></div>
+                    <button type="submit" class="btn btn-primary">Connect</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">Connected Listings</div>
+            <div class="card-body p-0">
+                {% for c in configs %}
+                <div class="d-flex align-items-center gap-3 px-3 py-3 border-bottom">
+                    <div><div class="fw-medium">{{ c.property.title }}</div><div class="text-muted" style="font-size:12px;">Listing: {{ c.listing_id }}</div></div>
+                    <span class="ms-auto badge {% if c.is_connected %}bg-success{% else %}bg-warning text-dark{% endif %}">{% if c.is_connected %}Connected{% else %}Pending{% endif %}</span>
+                </div>
+                {% empty %}<div class="empty-state py-4"><i class="fab fa-airbnb"></i><p>No listings connected yet</p></div>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

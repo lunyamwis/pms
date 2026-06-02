@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Task Detail{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between">
+    <h1 class="page-title">{{ task.get_task_type_display }}</h1>
+    <span class="badge bg-{{ task.get_priority_badge_class }} fs-6">{{ task.get_priority_display }}</span>
+</div>
+<div class="card" style="max-width:600px;"><div class="card-body">
+    <div class="mb-2"><strong>Property:</strong> {{ task.asset_property.title }}</div>
+    {% if task.unit %}<div class="mb-2"><strong>Unit:</strong> {{ task.unit.name }}</div>{% endif %}
+    <div class="mb-2"><strong>Scheduled:</strong> {{ task.scheduled_date|date:"D, d M Y" }} {% if task.scheduled_time %}at {{ task.scheduled_time }}{% endif %}</div>
+    <div class="mb-2"><strong>Assigned To:</strong> {{ task.assigned_to.name|default:"Unassigned" }}</div>
+    <div class="mb-2"><strong>Status:</strong> <span class="badge bg-primary">{{ task.get_status_display }}</span></div>
+    {% if task.notes %}<div class="mb-2"><strong>Notes:</strong> {{ task.notes }}</div>{% endif %}
+    {% if task.completion_photo %}<div class="mb-2"><strong>Photo:</strong> <a href="{{ task.completion_photo.url }}" target="_blank">View</a></div>{% endif %}
+</div></div>
+{% endblock %}
